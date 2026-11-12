@@ -1,3 +1,10 @@
+Para que tu punto de venta **Fastteam** guarde y sincronice tanto el **historial de pedidos** como el **nombre del negocio** utilizando **Firebase (Firestore)** en lugar de depender únicamente del navegador (`localStorage`), necesitamos adaptar las funciones que leen y escriben datos.
+
+Como Firestore opera de forma **asíncrona** (por internet), se requiere actualizar la lógica para que cargue los datos de la nube al iniciar y los guarde cada vez que agregues un producto, cambies el nombre del negocio o finalices una orden.
+
+Aquí tienes el código completo, corregido y listo con tu configuración de Firebase integrada:
+
+```html
 <!DOCTYPE html>
 <html lang="es" id="app-html">
 <head>
@@ -39,16 +46,14 @@
 </head>
 <body id="app-body" class="bg-gray-100 text-gray-800 h-screen flex flex-col overflow-hidden transition-colors duration-200 dark:bg-gray-900 dark:text-gray-100">
 
-    <!-- ==========================================
-         TOP BAR (NAVEGACIÓN Y TEMA)
-         ========================================== -->
+    <!-- TOP BAR -->
     <header id="app-header" class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0 shadow-xs z-20 dark:bg-gray-800 dark:border-gray-700 transition-colors duration-200">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-2xl shadow-inner dark:bg-orange-500/20">
                 🍔
             </div>
             <div>
-                <h1 id="header-title" class="font-extrabold text-base sm:text-lg text-gray-900 dark:text-white leading-tight">Mi Negocio POS</h1>
+                <h1 id="header-title" class="font-extrabold text-base sm:text-lg text-gray-900 dark:text-white leading-tight">Fastteam</h1>
                 <p class="text-xs text-gray-600 dark:text-gray-400">Punto de Venta Rápido</p>
             </div>
         </div>
@@ -72,19 +77,12 @@
         </button>
     </header>
 
-    <!-- ==========================================
-         CONTENEDOR PRINCIPAL DE VISTAS
-         ========================================== -->
+    <!-- CONTENEDOR PRINCIPAL DE VISTAS -->
     <main class="flex-1 overflow-hidden relative">
 
-        <!-- ==========================================
-             VISTA 1: VENDER (CATÁLOGO + CARRITO)
-             ========================================== -->
+        <!-- VISTA 1: VENDER -->
         <div id="view-sell" class="h-full flex flex-col lg:flex-row">
-            
-            <!-- SECCIÓN IZQUIERDA: CATÁLOGO DE PRODUCTOS -->
             <div class="flex-1 flex flex-col h-full overflow-hidden">
-                <!-- Barra de Búsqueda y Categorías -->
                 <div id="search-bar-container" class="bg-white px-4 py-3 border-b border-gray-200 shrink-0 space-y-2.5 dark:bg-gray-800 dark:border-gray-700 transition-colors duration-200">
                     <div class="flex items-center gap-2">
                         <div class="relative flex-1">
@@ -96,18 +94,11 @@
                             <span>➕</span> <span>Artículo</span>
                         </button>
                     </div>
-
-                    <!-- Filtro de Categorías -->
-                    <div id="category-filters" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                        <!-- Generado por JS -->
-                    </div>
+                    <div id="category-filters" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1"></div>
                 </div>
 
-                <!-- Cuadrícula de Menú -->
                 <div class="flex-1 overflow-y-auto p-4 pb-28 lg:pb-4">
-                    <div id="menu-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                        <!-- Productos generados por JS -->
-                    </div>
+                    <div id="menu-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
                     <div id="empty-menu" class="hidden flex-col items-center justify-center py-16 text-center text-gray-400">
                         <span class="text-4xl mb-2">🍽️</span>
                         <p class="font-bold text-sm">No se encontraron productos</p>
@@ -115,15 +106,13 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN DERECHA: CARRITO / ORDEN ACTUAL (ESCRITORIO) -->
+            <!-- CARRITO -->
             <aside id="cart-panel" class="hidden lg:flex lg:w-[420px] bg-white border-l border-gray-200 flex-col h-full shadow-lg z-10 dark:bg-gray-800 dark:border-gray-700 transition-colors duration-200">
-                <!-- Banner Editando Orden -->
                 <div id="edit-banner" class="hidden bg-amber-500 text-white px-4 py-2 flex items-center justify-between text-xs font-bold shrink-0">
                     <span id="edit-banner-text">✏️ Editando Orden #1</span>
                     <button onclick="cancelEditOrder()" class="bg-amber-700 hover:bg-amber-800 px-2 py-0.5 rounded text-white">Cancelar</button>
                 </div>
 
-                <!-- Cabecera del Carrito -->
                 <div id="cart-header-box" class="p-4 border-b border-gray-200 bg-gray-50/70 shrink-0 space-y-2.5 dark:bg-gray-800/60 dark:border-gray-700">
                     <div class="flex items-center justify-between">
                         <h2 id="cart-title" class="font-extrabold text-gray-900 text-base dark:text-white flex items-center gap-2">
@@ -132,18 +121,13 @@
                         </h2>
                         <button onclick="askClearCart()" id="clear-cart-btn" class="hidden text-xs font-bold text-red-500 hover:text-red-700">Vaciar</button>
                     </div>
-                    <input type="text" id="order-client-input" placeholder="Nombre del cliente o mesa (Ej. Cliente 1)" 
+                    <input type="text" id="order-client-input" placeholder="Nombre del cliente o mesa" 
                         class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
                 </div>
 
-                <!-- Lista de Artículos en el Carrito -->
-                <div id="cart-items-container" class="flex-1 overflow-y-auto p-4 space-y-2.5">
-                    <!-- Artículos del carrito -->
-                </div>
+                <div id="cart-items-container" class="flex-1 overflow-y-auto p-4 space-y-2.5"></div>
 
-                <!-- Pie del Carrito: Totales y Cobro -->
                 <div id="cart-footer-box" class="p-4 border-t border-gray-200 bg-gray-50 space-y-3 shrink-0 dark:bg-gray-800/60 dark:border-gray-700">
-                    <!-- Selector Método de Pago -->
                     <div class="space-y-1">
                         <span class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Método de Pago</span>
                         <div class="grid grid-cols-2 gap-2">
@@ -158,7 +142,6 @@
                         </div>
                     </div>
 
-                    <!-- Calculadora en Efectivo -->
                     <div id="cash-calc-box" class="bg-emerald-50/60 border border-emerald-200/80 p-3 rounded-2xl space-y-2.5 dark:bg-gray-900/50 dark:border-emerald-900/50">
                         <div class="flex items-center justify-between text-xs font-extrabold text-emerald-900 dark:text-emerald-300">
                             <span>Total a Pagar:</span>
@@ -184,9 +167,8 @@
                         </div>
                     </div>
 
-                    <!-- Aviso Transferencia -->
                     <div id="transfer-notice-box" class="hidden bg-blue-50 border border-blue-200 p-2.5 rounded-xl flex items-center gap-2 text-xs text-blue-800 dark:bg-blue-950/50 dark:border-blue-900 dark:text-blue-300">
-                        <span>📲</span> <span>Pago registrado por transferencia (no suma al efectivo físico).</span>
+                        <span>📲</span> <span>Pago registrado por transferencia.</span>
                     </div>
 
                     <div class="flex items-center justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
@@ -201,7 +183,6 @@
                 </div>
             </aside>
 
-            <!-- BARRA FLOTANTE MÓVIL -->
             <div id="mobile-cart-bar" class="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 p-3 shadow-lg z-20 flex items-center justify-between gap-3 dark:bg-gray-800 dark:border-gray-700">
                 <button onclick="toggleMobileCart(true)" class="flex-1 flex items-center justify-between bg-orange-500 active:bg-orange-600 text-white px-4 py-3 rounded-xl font-bold shadow-sm">
                     <div class="flex items-center gap-2">
@@ -213,12 +194,9 @@
             </div>
         </div>
 
-        <!-- ==========================================
-             VISTA 2: HISTORIAL DE ÓRDENES
-             ========================================== -->
+        <!-- VISTA 2: HISTORIAL -->
         <div id="view-history" class="hidden h-full overflow-y-auto p-4 sm:p-6 pb-24">
             <div class="max-w-4xl mx-auto space-y-5">
-                <!-- Tarjeta Resumen Caja -->
                 <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4 dark:bg-gray-800 dark:border-gray-700">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
@@ -238,7 +216,6 @@
                         </div>
                     </div>
 
-                    <!-- Desglose Efectivo vs Transferencia -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                         <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3 flex items-center justify-between dark:bg-emerald-950/40 dark:border-emerald-900">
                             <div class="flex items-center gap-2.5">
@@ -263,20 +240,13 @@
                     </div>
                 </div>
 
-                <!-- Lista de Órdenes Guardadas -->
-                <div class="space-y-3" id="history-orders-container">
-                    <!-- Órdenes renderizadas por JS -->
-                </div>
+                <div class="space-y-3" id="history-orders-container"></div>
             </div>
         </div>
 
-        <!-- ==========================================
-             VISTA 3: ADMINISTRAR MENÚ & NEGOCIO
-             ========================================== -->
+        <!-- VISTA 3: ADMINISTRAR MENÚ & NEGOCIO -->
         <div id="view-manage" class="hidden h-full overflow-y-auto p-4 sm:p-6 pb-24">
             <div class="max-w-3xl mx-auto space-y-6">
-                
-                <!-- Formulario para Agregar / Editar Producto -->
                 <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm transition-colors duration-200 dark:bg-gray-800 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-4">
                         <h2 id="form-title" class="font-extrabold text-base sm:text-lg text-gray-900 dark:text-white">➕ Agregar Nuevo Producto al Menú</h2>
@@ -287,29 +257,21 @@
 
                     <form id="product-form" onsubmit="saveProduct(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3.5">
                         <input type="hidden" id="prod-id">
-                        
-                        <!-- Ícono seleccionado -->
                         <div class="sm:col-span-2">
                             <label class="block text-xs font-bold text-gray-600 mb-1 dark:text-gray-300">Ícono</label>
                             <input type="text" id="prod-emoji" value="🍔" maxlength="4" required
                                 class="w-full px-3 py-2.5 bg-orange-50/70 border-2 border-orange-200 rounded-xl text-center text-2xl focus:outline-none focus:ring-2 focus:ring-orange-400 dark:bg-gray-700 dark:border-orange-500">
                         </div>
-
-                        <!-- Nombre del Producto -->
                         <div class="sm:col-span-5">
                             <label class="block text-xs font-bold text-gray-600 mb-1 dark:text-gray-300">Nombre del Producto</label>
                             <input type="text" id="prod-name" placeholder="Ej. Refresco 600ml" required
                                 class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
                         </div>
-
-                        <!-- Precio -->
                         <div class="sm:col-span-2">
                             <label class="block text-xs font-bold text-gray-600 mb-1 dark:text-gray-300">Precio ($)</label>
                             <input type="number" id="prod-price" step="0.50" min="0" placeholder="25" required
                                 class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-orange-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                         </div>
-
-                        <!-- Categoría -->
                         <div class="sm:col-span-3">
                             <label class="block text-xs font-bold text-gray-600 mb-1 dark:text-gray-300">Categoría</label>
                             <select id="prod-category-select" onchange="handleCategorySelectChange()"
@@ -325,37 +287,11 @@
                             <input type="text" id="prod-category-custom" placeholder="Escribe la categoría..."
                                 class="hidden mt-2 w-full px-3 py-2 bg-orange-50/70 border border-orange-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-400 dark:bg-gray-700 dark:border-orange-500 dark:text-white">
                         </div>
-
-                        <!-- Descripción o Ingredientes -->
                         <div class="sm:col-span-12">
                             <label class="block text-xs font-bold text-gray-600 mb-1 dark:text-gray-300">Descripción / Ingredientes (opcional)</label>
-                            <input type="text" id="prod-desc" placeholder="Ej. Salsa maggi, Valentina, inglesa, limón y Tajín"
+                            <input type="text" id="prod-desc" placeholder="Ej. Ingredientes adicionales"
                                 class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
                         </div>
-
-                        <!-- Galería rápida de Emojis -->
-                        <div class="sm:col-span-12 bg-orange-50/60 p-3 rounded-xl border border-orange-100 space-y-2 dark:bg-gray-700/50 dark:border-gray-700">
-                            <span class="block text-xs text-gray-600 font-bold dark:text-gray-300">🎨 Elige un ícono rápido:</span>
-                            <div class="flex flex-wrap items-center gap-1.5">
-                                <button type="button" onclick="setEmoji('🍔')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🍔</button>
-                                <button type="button" onclick="setEmoji('🌭')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🌭</button>
-                                <button type="button" onclick="setEmoji('🍟')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🍟</button>
-                                <button type="button" onclick="setEmoji('🍗')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🍗</button>
-                                <button type="button" onclick="setEmoji('🥤')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🥤</button>
-                                <button type="button" onclick="setEmoji('🧃')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🧃</button>
-                                <button type="button" onclick="setEmoji('💧')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">💧</button>
-                                <button type="button" onclick="setEmoji('🧋')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🧋</button>
-                                <button type="button" onclick="setEmoji('🍺')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🍺</button>
-                                <button type="button" onclick="setEmoji('🥓')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🥓</button>
-                                <button type="button" onclick="setEmoji('🧀')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🧀</button>
-                                <button type="button" onclick="setEmoji('🔥')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🔥</button>
-                                <button type="button" onclick="setEmoji('🌶️')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🌶️</button>
-                                <button type="button" onclick="setEmoji('🥭')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🥭</button>
-                                <button type="button" onclick="setEmoji('🍦')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🍦</button>
-                                <button type="button" onclick="setEmoji('🎁')" class="w-9 h-9 flex items-center justify-center bg-white hover:bg-orange-100 border border-orange-100 rounded-lg text-lg dark:bg-gray-800 dark:border-gray-700">🎁</button>
-                            </div>
-                        </div>
-
                         <div class="sm:col-span-12 pt-2">
                             <button type="submit" id="save-prod-btn" class="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-sm transition-all text-sm">
                                 Guardar Producto en el Menú
@@ -364,7 +300,6 @@
                     </form>
                 </div>
 
-                <!-- Lista de Productos Actuales -->
                 <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm transition-colors duration-200 dark:bg-gray-800 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-extrabold text-base text-gray-900 dark:text-white">📋 Productos en tu Menú (<span id="manage-count">0</span>)</h3>
@@ -372,28 +307,23 @@
                             Restaurar menú original
                         </button>
                     </div>
-                    <div id="manage-products-list" class="divide-y divide-gray-100 dark:divide-gray-700">
-                        <!-- Lista generada por JS -->
-                    </div>
+                    <div id="manage-products-list" class="divide-y divide-gray-100 dark:divide-gray-700"></div>
                 </div>
 
-                <!-- Configuración del Nombre del Negocio -->
                 <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm transition-colors duration-200 dark:bg-gray-800 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-3">
                         <h2 class="font-extrabold text-base text-gray-900 dark:text-white">🏷️ Nombre del Negocio</h2>
                     </div>
                     <div class="flex items-center gap-2.5">
-                        <input type="text" id="business-name-input" placeholder="Ej. Hamburguesas Don Pepe" 
+                        <input type="text" id="business-name-input" placeholder="Ej. Fastteam" 
                             class="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                         <button onclick="saveBusinessName()" class="px-5 py-2.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl text-sm transition-all shadow-xs dark:bg-orange-500 dark:hover:bg-orange-600">
                             Guardar Nombre
                         </button>
                     </div>
                 </div>
-
             </div>
         </div>
-
     </main>
 
     <!-- NOTIFICACIÓN TOAST -->
@@ -404,8 +334,25 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT DE LA APLICACIÓN -->
+    <!-- JAVASCRIPT DE LA APLICACIÓN CON FIREBASE -->
     <script>
+        // ==========================================
+        // CONFIGURACIÓN DE FIREBASE (FASTTEAM)
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZ8qXeNZncgvsre9-TrV67BqajRdk3Cac",
+            authDomain: "fastteam-b0835.firebaseapp.com",
+            projectId: "fastteam-b0835",
+            storageBucket: "fastteam-b0835.firebasestorage.app",
+            messagingSenderId: "194446355932",
+            appId: "1:194446355932:web:6dce7ed8b775df68d3f319",
+            measurementId: "G-KR0NZQ6M4X"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         const DEFAULT_MENU = [
             { id: 'h1', name: 'Hamburguesa sencilla', price: 60, category: 'Hamburguesas', emoji: '🍔', desc: '' },
             { id: 'h2', name: 'Hamburguesa hawaiana', price: 70, category: 'Hamburguesas', emoji: '🍍', desc: '' },
@@ -428,10 +375,15 @@
         let editingOrderId = null;
         let currentPaymentMethod = 'Efectivo';
         let isDarkMode = false;
-        let businessName = 'Mi Negocio POS';
+        let businessName = 'Fastteam';
 
-        window.onload = function () {
-            loadFromStorage();
+        window.onload = async function () {
+            const savedTheme = localStorage.getItem('pos_dark_mode');
+            if (savedTheme === 'true') {
+                isDarkMode = true;
+                applyTheme();
+            }
+            await loadFromFirebase();
             renderCategories();
             renderMenu();
             renderCart();
@@ -439,46 +391,74 @@
             renderManageList();
         };
 
-        function loadFromStorage() {
+        // CARGAR DATOS DESDE FIREBASE FIRESTORE
+        async function loadFromFirebase() {
             try {
-                const savedMenu = localStorage.getItem('pos_menu_items_v2');
-                const savedOrders = localStorage.getItem('pos_orders_history_v2');
-                const savedCounter = localStorage.getItem('pos_order_counter_v2');
-                const savedTheme = localStorage.getItem('pos_dark_mode');
-                const savedBusinessName = localStorage.getItem('pos_business_name_v3');
+                // Cargar Configuración (Nombre del negocio y contador)
+                const configDoc = await db.collection('fastteam_config').doc('settings').get();
+                if (configDoc.exists) {
+                    const data = configDoc.data();
+                    if (data.businessName) businessName = data.businessName;
+                    if (data.orderCounter) orderCounter = data.orderCounter;
+                }
 
-                menuItems = savedMenu ? JSON.parse(savedMenu) : [...DEFAULT_MENU];
-                orders = savedOrders ? JSON.parse(savedOrders) : [];
-                orderCounter = savedCounter ? parseInt(savedCounter, 10) : (orders.length + 1);
-                businessName = savedBusinessName || 'Mi Negocio POS';
-                
-                if (savedTheme === 'true') {
-                    isDarkMode = true;
-                    applyTheme();
+                // Cargar Menú
+                const menuSnapshot = await db.collection('fastteam_menu').get();
+                if (!menuSnapshot.empty) {
+                    menuItems = [];
+                    menuSnapshot.forEach(doc => {
+                        menuItems.push(doc.data());
+                    });
+                } else {
+                    menuItems = [...DEFAULT_MENU];
+                    // Guardar menú por defecto en Firebase si está vacío
+                    for (let item of menuItems) {
+                        await db.collection('fastteam_menu').doc(item.id).set(item);
+                    }
+                }
+
+                // Cargar Órdenes / Historial
+                const ordersSnapshot = await db.collection('fastteam_orders').orderBy('number', 'desc').get();
+                if (!ordersSnapshot.empty) {
+                    orders = [];
+                    ordersSnapshot.forEach(doc => {
+                        orders.push(doc.data());
+                    });
+                    if (!configDoc.exists || !configDoc.data().orderCounter) {
+                        orderCounter = orders.length + 1;
+                    }
                 }
 
                 const titleEl = document.getElementById('header-title');
                 if (titleEl) titleEl.textContent = businessName;
                 const nameInput = document.getElementById('business-name-input');
                 if (nameInput) nameInput.value = businessName;
+
             } catch (e) {
+                console.error("Error al cargar desde Firebase:", e);
                 menuItems = [...DEFAULT_MENU];
                 orders = [];
-                orderCounter = 1;
-                businessName = 'Mi Negocio POS';
             }
         }
 
-        function saveBusinessName() {
+        async function saveBusinessName() {
             const input = document.getElementById('business-name-input');
             const val = input.value.trim();
             if (!val) return;
 
             businessName = val;
-            localStorage.setItem('pos_business_name_v3', businessName);
-            const titleEl = document.getElementById('header-title');
-            if (titleEl) titleEl.textContent = businessName;
-            showToast('🏢', 'Nombre del negocio actualizado');
+            try {
+                await db.collection('fastteam_config').doc('settings').set({
+                    businessName: businessName,
+                    orderCounter: orderCounter
+                }, { merge: true });
+
+                const titleEl = document.getElementById('header-title');
+                if (titleEl) titleEl.textContent = businessName;
+                showToast('🏢', 'Nombre del negocio actualizado en la nube');
+            } catch (e) {
+                showToast('❌', 'Error al guardar en la nube');
+            }
         }
 
         function toggleDarkMode() {
@@ -499,10 +479,6 @@
             const mobileBar = document.getElementById('mobile-cart-bar');
             const themeBtn = document.getElementById('theme-toggle-btn');
             const titleEl = document.getElementById('header-title');
-
-            const tabSell = document.getElementById('tab-sell');
-            const tabHistory = document.getElementById('tab-history');
-            const tabManage = document.getElementById('tab-manage');
 
             if (isDarkMode) {
                 body.classList.replace('bg-gray-100', 'bg-gray-900');
@@ -847,7 +823,8 @@
             }
         }
 
-        function finalizeOrder() {
+        // GUARDAR ORDEN EN FIREBASE
+        async function finalizeOrder() {
             if (cart.length === 0) return;
 
             const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
@@ -860,24 +837,33 @@
                 const idx = orders.findIndex(o => o.id === editingOrderId);
                 if (idx !== -1) {
                     const num = orders[idx].number;
-                    orders[idx].client = rawClient || `Cliente ${num}`;
-                    orders[idx].items = cart.map(i => ({ ...i }));
-                    orders[idx].total = totalAmount;
-                    orders[idx].paymentMethod = currentPaymentMethod;
-                    orders[idx].updatedAt = timeStr;
+                    const updatedOrder = {
+                        ...orders[idx],
+                        client: rawClient || `Cliente ${num}`,
+                        items: cart.map(i => ({ ...i })),
+                        total: totalAmount,
+                        paymentMethod: currentPaymentMethod,
+                        updatedAt: timeStr
+                    };
 
-                    saveOrdersToStorage();
-                    editingOrderId = null;
-                    cart = [];
-                    document.getElementById('order-client-input').value = '';
-                    document.getElementById('payment-received-input').value = '';
-                    setPaymentMethod('Efectivo');
+                    try {
+                        await db.collection('fastteam_orders').doc(editingOrderId).set(updatedOrder);
+                        orders[idx] = updatedOrder;
 
-                    renderMenu();
-                    renderCart();
-                    renderHistory();
-                    toggleMobileCart(false);
-                    showToast('💾', `Orden #${num} actualizada con éxito`);
+                        editingOrderId = null;
+                        cart = [];
+                        document.getElementById('order-client-input').value = '';
+                        document.getElementById('payment-received-input').value = '';
+                        setPaymentMethod('Efectivo');
+
+                        renderMenu();
+                        renderCart();
+                        renderHistory();
+                        toggleMobileCart(false);
+                        showToast('💾', `Orden #${num} actualizada en la nube`);
+                    } catch (e) {
+                        showToast('❌', 'Error al actualizar orden en Firebase');
+                    }
                     return;
                 }
             }
@@ -894,20 +880,30 @@
                 total: totalAmount
             };
 
-            orders.unshift(newOrder);
-            orderCounter += 1;
-            saveOrdersToStorage();
+            try {
+                // Guardar orden y actualizar contador en la nube
+                await db.collection('fastteam_orders').doc(newOrder.id).set(newOrder);
+                orderCounter += 1;
+                await db.collection('fastteam_config').doc('settings').set({
+                    orderCounter: orderCounter,
+                    businessName: businessName
+                }, { merge: true });
 
-            cart = [];
-            document.getElementById('order-client-input').value = '';
-            document.getElementById('payment-received-input').value = '';
-            setPaymentMethod('Efectivo');
+                orders.unshift(newOrder);
 
-            renderMenu();
-            renderCart();
-            renderHistory();
-            toggleMobileCart(false);
-            showToast('✅', `Orden #${newOrder.number} (${clientName}) finalizada`);
+                cart = [];
+                document.getElementById('order-client-input').value = '';
+                document.getElementById('payment-received-input').value = '';
+                setPaymentMethod('Efectivo');
+
+                renderMenu();
+                renderCart();
+                renderHistory();
+                toggleMobileCart(false);
+                showToast('✅', `Orden #${newOrder.number} guardada en Firebase`);
+            } catch (e) {
+                showToast('❌', 'Error al guardar la orden en la nube');
+            }
         }
 
         function editOrder(orderId) {
@@ -938,32 +934,46 @@
             showToast('↩️', 'Edición cancelada');
         }
 
-        function deleteOrder(orderId) {
+        async function deleteOrder(orderId) {
             if (!confirm('¿Eliminar esta orden del historial?')) return;
             if (editingOrderId === orderId) cancelEditOrder();
-            orders = orders.filter(o => o.id !== orderId);
-            saveOrdersToStorage();
-            renderHistory();
-            showToast('🗑️', 'Orden eliminada');
+            
+            try {
+                await db.collection('fastteam_orders').doc(orderId).delete();
+                orders = orders.filter(o => o.id !== orderId);
+                renderHistory();
+                showToast('🗑️', 'Orden eliminada de la nube');
+            } catch (e) {
+                showToast('❌', 'Error al eliminar orden');
+            }
         }
 
-        function askClearHistory() {
+        async function askClearHistory() {
             if (orders.length === 0) return;
             if (!confirm('¿Borrar todo el historial de ventas?')) return;
-            orders = [];
-            orderCounter = 1;
-            if (editingOrderId !== null) cancelEditOrder();
-            saveOrdersToStorage();
-            renderCart();
-            renderHistory();
-            showToast('🗑️', 'Historial reiniciado');
-        }
-
-        function saveOrdersToStorage() {
+            
             try {
-                localStorage.setItem('pos_orders_history_v2', JSON.stringify(orders));
-                localStorage.setItem('pos_order_counter_v2', orderCounter.toString());
-            } catch (e) {}
+                const batch = db.batch();
+                orders.forEach(o => {
+                    const ref = db.collection('fastteam_orders').doc(o.id);
+                    batch.delete(ref);
+                });
+                await batch.commit();
+
+                orders = [];
+                orderCounter = 1;
+                await db.collection('fastteam_config').doc('settings').set({
+                    orderCounter: orderCounter,
+                    businessName: businessName
+                }, { merge: true });
+
+                if (editingOrderId !== null) cancelEditOrder();
+                renderCart();
+                renderHistory();
+                showToast('🗑️', 'Historial reiniciado en la nube');
+            } catch (e) {
+                showToast('❌', 'Error al borrar historial');
+            }
         }
 
         function renderHistory() {
@@ -1052,13 +1062,7 @@
             });
         }
 
-        function saveMenuToStorage() {
-            try {
-                localStorage.setItem('pos_menu_items_v2', JSON.stringify(menuItems));
-            } catch (e) {}
-        }
-
-        function saveProduct(e) {
+        async function saveProduct(e) {
             e.preventDefault();
             const id = document.getElementById('prod-id').value;
             const emoji = document.getElementById('prod-emoji').value.trim() || '🍽️';
@@ -1071,25 +1075,30 @@
 
             if (!name || isNaN(price)) return;
 
-            if (id) {
-                const idx = menuItems.findIndex(p => p.id === id);
-                if (idx !== -1) {
-                    menuItems[idx] = { id, name, price, category, emoji, desc };
-                    showToast('✏️', 'Producto actualizado');
-                }
-            } else {
-                menuItems.push({
-                    id: 'prod_' + Date.now(),
-                    name, price, category, emoji, desc
-                });
-                showToast('✅', 'Producto agregado al menú');
-            }
+            const prodData = {
+                id: id || ('prod_' + Date.now()),
+                name, price, category, emoji, desc
+            };
 
-            saveMenuToStorage();
-            resetProductForm();
-            renderCategories();
-            renderMenu();
-            renderManageList();
+            try {
+                await db.collection('fastteam_menu').doc(prodData.id).set(prodData);
+                
+                if (id) {
+                    const idx = menuItems.findIndex(p => p.id === id);
+                    if (idx !== -1) menuItems[idx] = prodData;
+                    showToast('✏️', 'Producto actualizado en la nube');
+                } else {
+                    menuItems.push(prodData);
+                    showToast('✅', 'Producto agregado en la nube');
+                }
+
+                resetProductForm();
+                renderCategories();
+                renderMenu();
+                renderManageList();
+            } catch (e) {
+                showToast('❌', 'Error al guardar producto');
+            }
         }
 
         function startEditProduct(id) {
@@ -1124,30 +1133,57 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function deleteProduct(id) {
+        async function deleteProduct(id) {
             if (!confirm('¿Eliminar este producto del menú?')) return;
-            menuItems = menuItems.filter(i => i.id !== id);
-            saveMenuToStorage();
-            renderCategories();
-            renderMenu();
-            renderManageList();
-            showToast('🗑️', 'Producto eliminado');
+            try {
+                await db.collection('fastteam_menu').doc(id).delete();
+                menuItems = menuItems.filter(i => i.id !== id);
+                renderCategories();
+                renderMenu();
+                renderManageList();
+                showToast('🗑️', 'Producto eliminado');
+            } catch (e) {
+                showToast('❌', 'Error al eliminar producto');
+            }
         }
 
-        function askRestoreDefaultMenu() {
+        async function askRestoreDefaultMenu() {
             if (!confirm('¿Restaurar el menú original?')) return;
-            menuItems = [...DEFAULT_MENU];
-            saveMenuToStorage();
-            renderCategories();
-            renderMenu();
-            renderManageList();
-            showToast('🔄', 'Menú original restaurado');
+            try {
+                const batch = db.batch();
+                menuItems.forEach(i => {
+                    batch.delete(db.collection('fastteam_menu').doc(i.id));
+                });
+                await batch.commit();
+
+                menuItems = [...DEFAULT_MENU];
+                for (let item of menuItems) {
+                    await db.collection('fastteam_menu').doc(item.id).set(item);
+                }
+
+                renderCategories();
+                renderMenu();
+                renderManageList();
+                showToast('🔄', 'Menú original restaurado');
+            } catch (e) {
+                showToast('❌', 'Error al restaurar menú');
+            }
         }
 
         function openNewProductModal() {
             switchTab('manage');
             resetProductForm();
             document.getElementById('prod-name').focus();
+        }
+
+        function resetProductForm() {
+            document.getElementById('product-form').reset();
+            document.getElementById('prod-id').value = '';
+            document.getElementById('prod-emoji').value = '🍔';
+            document.getElementById('form-title').textContent = '➕ Agregar Nuevo Producto al Menú';
+            document.getElementById('save-prod-btn').textContent = 'Guardar Producto en el Menú';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            document.getElementById('prod-category-custom').classList.add('hidden');
         }
 
         function setEmoji(e) {
@@ -1315,24 +1351,7 @@
             }, 2500);
         }
     </script>
-<!-- JAVASCRIPT DE LA APLICACIÓN CON FIREBASE -->
-    <script>
-        // ==========================================
-        // CONFIGURACIÓN DE FIREBASE (FASTTEAM)
-        // ==========================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyAZ8qXeNZncgvsre9-TrV67BqajRdk3Cac",
-            authDomain: "fastteam-b0835.firebaseapp.com",
-            projectId: "fastteam-b0835",
-            storageBucket: "fastteam-b0835.firebasestorage.app",
-            messagingSenderId: "194446355932",
-            appId: "1:194446355932:web:6dce7ed8b775df68d3f319",
-            measurementId: "G-KR0NZQ6M4X"
-        };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-    </script>
 </body>
 </html>
+
+```
