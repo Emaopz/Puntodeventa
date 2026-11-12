@@ -1,10 +1,12 @@
-```html
 <!DOCTYPE html>
 <html lang="es" id="app-html">
 <head>
+    <!-- Firebase App y Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fastteam - Punto de Venta</title>
+    <title>Punto de Venta - Menú y Pedidos</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -29,11 +31,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- jsPDF para generar tickets y cortes en PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
-    <!-- Firebase App (Compat SDK para uso directo en HTML) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
     <style>
         body { font-family: 'Inter', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -51,7 +48,7 @@
                 🍔
             </div>
             <div>
-                <h1 id="header-title" class="font-extrabold text-base sm:text-lg text-gray-900 dark:text-white leading-tight">Fastteam</h1>
+                <h1 id="header-title" class="font-extrabold text-base sm:text-lg text-gray-900 dark:text-white leading-tight">Mi Negocio POS</h1>
                 <p class="text-xs text-gray-600 dark:text-gray-400">Punto de Venta Rápido</p>
             </div>
         </div>
@@ -407,25 +404,8 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT DE LA APLICACIÓN CON FIREBASE -->
+    <!-- JAVASCRIPT DE LA APLICACIÓN -->
     <script>
-        // ==========================================
-        // CONFIGURACIÓN DE FIREBASE (FASTTEAM)
-        // ==========================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyAZ8qXeNZncgvsre9-TrV67BqajRdk3Cac",
-            authDomain: "fastteam-b0835.firebaseapp.com",
-            projectId: "fastteam-b0835",
-            storageBucket: "fastteam-b0835.firebasestorage.app",
-            messagingSenderId: "194446355932",
-            appId: "1:194446355932:web:6dce7ed8b775df68d3f319",
-            measurementId: "G-KR0NZQ6M4X"
-        };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
         const DEFAULT_MENU = [
             { id: 'h1', name: 'Hamburguesa sencilla', price: 60, category: 'Hamburguesas', emoji: '🍔', desc: '' },
             { id: 'h2', name: 'Hamburguesa hawaiana', price: 70, category: 'Hamburguesas', emoji: '🍍', desc: '' },
@@ -448,58 +428,44 @@
         let editingOrderId = null;
         let currentPaymentMethod = 'Efectivo';
         let isDarkMode = false;
-        let businessName = 'Fastteam';
+        let businessName = 'Mi Negocio POS';
 
         window.onload = function () {
-            loadThemeFromStorage();
-            initCloudSync();
+            loadFromStorage();
+            renderCategories();
+            renderMenu();
+            renderCart();
+            renderHistory();
+            renderManageList();
         };
 
-        function initCloudSync() {
-            // Escuchar cambios en tiempo real en la colección de órdenes
-            db.collection("orders").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+        function loadFromStorage() {
+            try {
+                const savedMenu = localStorage.getItem('pos_menu_items_v2');
+                const savedOrders = localStorage.getItem('pos_orders_history_v2');
+                const savedCounter = localStorage.getItem('pos_order_counter_v2');
+                const savedTheme = localStorage.getItem('pos_dark_mode');
+                const savedBusinessName = localStorage.getItem('pos_business_name_v3');
+
+                menuItems = savedMenu ? JSON.parse(savedMenu) : [...DEFAULT_MENU];
+                orders = savedOrders ? JSON.parse(savedOrders) : [];
+                orderCounter = savedCounter ? parseInt(savedCounter, 10) : (orders.length + 1);
+                businessName = savedBusinessName || 'Mi Negocio POS';
+                
+                if (savedTheme === 'true') {
+                    isDarkMode = true;
+                    applyTheme();
+                }
+
+                const titleEl = document.getElementById('header-title');
+                if (titleEl) titleEl.textContent = businessName;
+                const nameInput = document.getElementById('business-name-input');
+                if (nameInput) nameInput.value = businessName;
+            } catch (e) {
+                menuItems = [...DEFAULT_MENU];
                 orders = [];
-                snapshot.forEach((doc) => {
-                    orders.push({ id: doc.id, ...doc.data() });
-                });
-                orderCounter = orders.length + 1;
-                renderHistory();
-                renderCart();
-            });
-
-            // Escuchar cambios en tiempo real en el menú
-            db.collection("menu").onSnapshot((snapshot) => {
-                if (snapshot.empty) {
-                    // Si está vacío, cargar menú por defecto en la nube
-                    DEFAULT_MENU.forEach(item => {
-                        db.collection("menu").doc(item.id).set(item);
-                    });
-                } else {
-                    menuItems = [];
-                    snapshot.forEach((doc) => {
-                        menuItems.push({ id: doc.id, ...doc.data() });
-                    });
-                    renderCategories();
-                    renderMenu();
-                    renderManageList();
-                }
-            });
-
-            // Cargar configuración del negocio
-            db.collection("config").doc("business").get().then((doc) => {
-                if (doc.exists && doc.data().name) {
-                    businessName = doc.data().name;
-                    document.getElementById('header-title').textContent = businessName;
-                    document.getElementById('business-name-input').value = businessName;
-                }
-            });
-        }
-
-        function loadThemeFromStorage() {
-            const savedTheme = localStorage.getItem('pos_dark_mode');
-            if (savedTheme === 'true') {
-                isDarkMode = true;
-                applyTheme();
+                orderCounter = 1;
+                businessName = 'Mi Negocio POS';
             }
         }
 
@@ -509,9 +475,10 @@
             if (!val) return;
 
             businessName = val;
-            db.collection("config").doc("business").set({ name: businessName });
-            document.getElementById('header-title').textContent = businessName;
-            showToast('🏢', 'Nombre del negocio actualizado en la nube');
+            localStorage.setItem('pos_business_name_v3', businessName);
+            const titleEl = document.getElementById('header-title');
+            if (titleEl) titleEl.textContent = businessName;
+            showToast('🏢', 'Nombre del negocio actualizado');
         }
 
         function toggleDarkMode() {
@@ -532,6 +499,10 @@
             const mobileBar = document.getElementById('mobile-cart-bar');
             const themeBtn = document.getElementById('theme-toggle-btn');
             const titleEl = document.getElementById('header-title');
+
+            const tabSell = document.getElementById('tab-sell');
+            const tabHistory = document.getElementById('tab-history');
+            const tabManage = document.getElementById('tab-manage');
 
             if (isDarkMode) {
                 body.classList.replace('bg-gray-100', 'bg-gray-900');
@@ -886,53 +857,57 @@
             const timeStr = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
 
             if (editingOrderId !== null) {
-                const targetOrder = orders.find(o => o.id === editingOrderId);
-                if (targetOrder) {
-                    const updatedData = {
-                        client: rawClient || `Cliente ${targetOrder.number}`,
-                        items: cart.map(i => ({ ...i })),
-                        total: totalAmount,
-                        paymentMethod: currentPaymentMethod,
-                        updatedAt: timeStr
-                    };
+                const idx = orders.findIndex(o => o.id === editingOrderId);
+                if (idx !== -1) {
+                    const num = orders[idx].number;
+                    orders[idx].client = rawClient || `Cliente ${num}`;
+                    orders[idx].items = cart.map(i => ({ ...i }));
+                    orders[idx].total = totalAmount;
+                    orders[idx].paymentMethod = currentPaymentMethod;
+                    orders[idx].updatedAt = timeStr;
 
-                    db.collection("orders").doc(editingOrderId).update(updatedData).then(() => {
-                        editingOrderId = null;
-                        cart = [];
-                        document.getElementById('order-client-input').value = '';
-                        document.getElementById('payment-received-input').value = '';
-                        setPaymentMethod('Efectivo');
-                        renderMenu();
-                        renderCart();
-                        toggleMobileCart(false);
-                        showToast('💾', `Orden actualizada en la nube`);
-                    });
+                    saveOrdersToStorage();
+                    editingOrderId = null;
+                    cart = [];
+                    document.getElementById('order-client-input').value = '';
+                    document.getElementById('payment-received-input').value = '';
+                    setPaymentMethod('Efectivo');
+
+                    renderMenu();
+                    renderCart();
+                    renderHistory();
+                    toggleMobileCart(false);
+                    showToast('💾', `Orden #${num} actualizada con éxito`);
                     return;
                 }
             }
 
             const clientName = rawClient || `Cliente ${orderCounter}`;
             const newOrder = {
+                id: 'ord_' + Date.now(),
                 number: orderCounter,
                 client: clientName,
                 date: dateStr,
                 time: timeStr,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 paymentMethod: currentPaymentMethod,
                 items: cart.map(i => ({ ...i })),
                 total: totalAmount
             };
 
-            db.collection("orders").add(newOrder).then(() => {
-                cart = [];
-                document.getElementById('order-client-input').value = '';
-                document.getElementById('payment-received-input').value = '';
-                setPaymentMethod('Efectivo');
-                renderMenu();
-                renderCart();
-                toggleMobileCart(false);
-                showToast('✅', `Orden guardada en la nube`);
-            });
+            orders.unshift(newOrder);
+            orderCounter += 1;
+            saveOrdersToStorage();
+
+            cart = [];
+            document.getElementById('order-client-input').value = '';
+            document.getElementById('payment-received-input').value = '';
+            setPaymentMethod('Efectivo');
+
+            renderMenu();
+            renderCart();
+            renderHistory();
+            toggleMobileCart(false);
+            showToast('✅', `Orden #${newOrder.number} (${clientName}) finalizada`);
         }
 
         function editOrder(orderId) {
@@ -964,29 +939,31 @@
         }
 
         function deleteOrder(orderId) {
-            if (!confirm('¿Eliminar esta orden de la nube?')) return;
+            if (!confirm('¿Eliminar esta orden del historial?')) return;
             if (editingOrderId === orderId) cancelEditOrder();
-            
-            db.collection("orders").doc(orderId).delete().then(() => {
-                showToast('🗑️', 'Orden eliminada');
-            });
+            orders = orders.filter(o => o.id !== orderId);
+            saveOrdersToStorage();
+            renderHistory();
+            showToast('🗑️', 'Orden eliminada');
         }
 
         function askClearHistory() {
             if (orders.length === 0) return;
-            if (!confirm('¿Borrar todo el historial de ventas de la nube?')) return;
+            if (!confirm('¿Borrar todo el historial de ventas?')) return;
+            orders = [];
+            orderCounter = 1;
+            if (editingOrderId !== null) cancelEditOrder();
+            saveOrdersToStorage();
+            renderCart();
+            renderHistory();
+            showToast('🗑️', 'Historial reiniciado');
+        }
 
-            const batch = db.batch();
-            orders.forEach(o => {
-                const ref = db.collection("orders").doc(o.id);
-                batch.delete(ref);
-            });
-            batch.commit().then(() => {
-                if (editingOrderId !== null) cancelEditOrder();
-                renderCart();
-                renderHistory();
-                showToast('🗑️', 'Historial reiniciado');
-            });
+        function saveOrdersToStorage() {
+            try {
+                localStorage.setItem('pos_orders_history_v2', JSON.stringify(orders));
+                localStorage.setItem('pos_order_counter_v2', orderCounter.toString());
+            } catch (e) {}
         }
 
         function renderHistory() {
@@ -1075,6 +1052,12 @@
             });
         }
 
+        function saveMenuToStorage() {
+            try {
+                localStorage.setItem('pos_menu_items_v2', JSON.stringify(menuItems));
+            } catch (e) {}
+        }
+
         function saveProduct(e) {
             e.preventDefault();
             const id = document.getElementById('prod-id').value;
@@ -1088,13 +1071,25 @@
 
             if (!name || isNaN(price)) return;
 
-            const prodId = id || ('prod_' + Date.now());
-            const productData = { name, price, category, emoji, desc };
+            if (id) {
+                const idx = menuItems.findIndex(p => p.id === id);
+                if (idx !== -1) {
+                    menuItems[idx] = { id, name, price, category, emoji, desc };
+                    showToast('✏️', 'Producto actualizado');
+                }
+            } else {
+                menuItems.push({
+                    id: 'prod_' + Date.now(),
+                    name, price, category, emoji, desc
+                });
+                showToast('✅', 'Producto agregado al menú');
+            }
 
-            db.collection("menu").doc(prodId).set(productData).then(() => {
-                showToast(id ? '✏️' : '✅', id ? 'Producto actualizado' : 'Producto agregado al menú');
-                resetProductForm();
-            });
+            saveMenuToStorage();
+            resetProductForm();
+            renderCategories();
+            renderMenu();
+            renderManageList();
         }
 
         function startEditProduct(id) {
@@ -1131,17 +1126,21 @@
 
         function deleteProduct(id) {
             if (!confirm('¿Eliminar este producto del menú?')) return;
-            db.collection("menu").doc(id).delete().then(() => {
-                renderManageList();
-                showToast('🗑️', 'Producto eliminado');
-            });
+            menuItems = menuItems.filter(i => i.id !== id);
+            saveMenuToStorage();
+            renderCategories();
+            renderMenu();
+            renderManageList();
+            showToast('🗑️', 'Producto eliminado');
         }
 
         function askRestoreDefaultMenu() {
             if (!confirm('¿Restaurar el menú original?')) return;
-            DEFAULT_MENU.forEach(item => {
-                db.collection("menu").doc(item.id).set(item);
-            });
+            menuItems = [...DEFAULT_MENU];
+            saveMenuToStorage();
+            renderCategories();
+            renderMenu();
+            renderManageList();
             showToast('🔄', 'Menú original restaurado');
         }
 
@@ -1305,19 +1304,35 @@
             showToast('📄', 'Corte diario descargado en PDF');
         }
 
-    function showToast(icon, msg) {
-        const container = document.getElementById('toast-container');
-        document.getElementById('toast-icon').textContent = icon;
-        document.getElementById('toast-msg').textContent = msg;
+        function showToast(icon, msg) {
+            const container = document.getElementById('toast-container');
+            document.getElementById('toast-icon').textContent = icon;
+            document.getElementById('toast-msg').textContent = msg;
 
-        container.classList.remove('translate-y-20', 'opacity-0');
-        setTimeout(() => {
-            container.classList.add('translate-y-20', 'opacity-0');
-        }, 2500);
-    }
-</script>
+            container.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                container.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+<!-- JAVASCRIPT DE LA APLICACIÓN CON FIREBASE -->
+    <script>
+        // ==========================================
+        // CONFIGURACIÓN DE FIREBASE (FASTTEAM)
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZ8qXeNZncgvsre9-TrV67BqajRdk3Cac",
+            authDomain: "fastteam-b0835.firebaseapp.com",
+            projectId: "fastteam-b0835",
+            storageBucket: "fastteam-b0835.firebasestorage.app",
+            messagingSenderId: "194446355932",
+            appId: "1:194446355932:web:6dce7ed8b775df68d3f319",
+            measurementId: "G-KR0NZQ6M4X"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
 </body>
 </html>
-```[cite: 7]
-
-```
