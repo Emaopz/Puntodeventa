@@ -10,9 +10,14 @@
   "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "https://fastteam.netlify.app/favicon.ico",
-      "type": "image/x-icon",
+      "src": "/icon-192.png",
+      "type": "image/png",
       "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ],
   "lang": "es",
