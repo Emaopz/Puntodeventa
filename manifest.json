@@ -6,20 +6,13 @@
   "orientation": "any",
   "scope": "/",
   "short_name": "FastTeam",
-  "start_url": "/https://fastteam.netlify.app/",
+  "start_url": "/",
   "theme_color": "#ffffff",
   "icons": [
     {
       "src": "https://fastteam.netlify.app/favicon.ico",
       "type": "image/x-icon",
-      "isSquare": false,
-      "isPng": false,
-      "isWebp": false,
-      "isJpg": false,
-      "width": 0,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "sizes": "192x192"
     }
   ],
   "lang": "es",
