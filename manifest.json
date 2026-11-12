@@ -1,0 +1,27 @@
+{
+  "background_color": "#f4b451",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "FastTeam",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "FastTeam",
+  "start_url": "/https://fastteam.netlify.app/",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://fastteam.netlify.app/favicon.ico",
+      "type": "image/x-icon",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ],
+  "lang": "es",
+  "description": "Punto de Venta"
+}
