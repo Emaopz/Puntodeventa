@@ -89,6 +89,10 @@
                             <input type="text" id="search-input" oninput="renderMenu()" placeholder="Buscar producto, hamburguesa, alitas..." 
                                 class="w-full pl-10 pr-4 py-2 bg-gray-100 border border-transparent focus:border-orange-400 focus:bg-white rounded-xl text-sm transition-all focus:outline-none dark:bg-gray-700 dark:text-white dark:placeholder-gray-400">
                         </div>
+                        <!-- Botón Alternar Vista (Cuadrícula / Lista) -->
+                        <button onclick="toggleViewMode()" id="view-mode-toggle-btn" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition-all flex items-center justify-center shrink-0 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600" title="Cambiar vista de productos">
+                            <span id="view-mode-icon">📄</span>
+                        </button>
                         <button onclick="openNewProductModal()" class="px-3.5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs sm:text-sm shadow-xs transition-all flex items-center gap-1 shrink-0">
                             <span>➕</span> <span>Artículo</span>
                         </button>
@@ -100,10 +104,10 @@
                     </div>
                 </div>
 
-                <!-- Cuadrícula de Menú -->
+                <!-- Cuadrícula / Lista de Menú -->
                 <div class="flex-1 overflow-y-auto p-4 pb-28 lg:pb-4">
-                    <div id="menu-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                        <!-- Productos generados por JS -->
+                    <div id="menu-container">
+                        <!-- Generado por JS según el modo (grid o list) -->
                     </div>
                     <div id="empty-menu" class="hidden flex-col items-center justify-center py-16 text-center text-gray-400">
                         <span class="text-4xl mb-2">🍽️</span>
@@ -449,6 +453,7 @@
         let businessName = 'Mi Negocio POS';
         let businessIconData = { type: 'emoji', value: '🍔' };
         let tempUploadedImageBase64 = null;
+        let productViewMode = 'grid'; // 'grid' o 'list'
 
         window.onload = function () {
             loadFromStorage();
@@ -467,11 +472,13 @@
                 const savedTheme = localStorage.getItem('pos_dark_mode');
                 const savedBusinessName = localStorage.getItem('pos_business_name_v3');
                 const savedBusinessIcon = localStorage.getItem('pos_business_icon_v1');
+                const savedViewMode = localStorage.getItem('pos_product_view_mode');
 
                 menuItems = savedMenu ? JSON.parse(savedMenu) : [...DEFAULT_MENU];
                 orders = savedOrders ? JSON.parse(savedOrders) : [];
                 orderCounter = savedCounter ? parseInt(savedCounter, 10) : (orders.length + 1);
                 businessName = savedBusinessName || 'Mi Negocio POS';
+                productViewMode = savedViewMode || 'grid';
                 
                 if (savedBusinessIcon) {
                     try { businessIconData = JSON.parse(savedBusinessIcon); } catch(e) {}
@@ -493,12 +500,28 @@
                 }
 
                 applyBusinessIconToHeader();
+                updateViewModeButtonIcon();
             } catch (e) {
                 menuItems = [...DEFAULT_MENU];
                 orders = [];
                 orderCounter = 1;
                 businessName = 'Mi Negocio POS';
                 businessIconData = { type: 'emoji', value: '🍔' };
+            }
+        }
+
+        function toggleViewMode() {
+            productViewMode = productViewMode === 'grid' ? 'list' : 'grid';
+            localStorage.setItem('pos_product_view_mode', productViewMode);
+            updateViewModeButtonIcon();
+            renderMenu();
+            showToast('👁️', productViewMode === 'grid' ? 'Vista de cuadrícula' : 'Vista de lista');
+        }
+
+        function updateViewModeButtonIcon() {
+            const iconEl = document.getElementById('view-mode-icon');
+            if (iconEl) {
+                iconEl.textContent = productViewMode === 'grid' ? '📄' : '🔲';
             }
         }
 
@@ -716,7 +739,7 @@
 
         function renderMenu() {
             const search = document.getElementById('search-input').value.toLowerCase().trim();
-            const grid = document.getElementById('menu-grid');
+            const container = document.getElementById('menu-container');
             const empty = document.getElementById('empty-menu');
 
             const filtered = menuItems.filter(item => {
@@ -725,44 +748,87 @@
                 return matchCat && matchSearch;
             });
 
-            grid.innerHTML = '';
+            container.innerHTML = '';
             if (filtered.length === 0) {
-                grid.classList.add('hidden');
+                container.classList.add('hidden');
                 empty.classList.remove('hidden');
                 empty.classList.add('flex');
                 return;
             }
 
-            grid.classList.remove('hidden');
+            container.classList.remove('hidden');
             empty.classList.add('hidden');
             empty.classList.remove('flex');
 
-            filtered.forEach(item => {
-                const inCart = cart.find(c => c.id === item.id);
-                const qty = inCart ? inCart.qty : 0;
-                const badge = qty > 0 ? `<span class="absolute top-2.5 right-2.5 bg-orange-500 text-white text-xs font-extrabold w-6 h-6 rounded-full flex items-center justify-center shadow-xs">${qty}</span>` : '';
-                const descHtml = item.desc ? `<p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">${item.desc}</p>` : '';
+            if (productViewMode === 'grid') {
+                const gridDiv = document.createElement('div');
+                gridDiv.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3';
 
-                const card = document.createElement('div');
-                card.className = `relative p-3.5 rounded-2xl border ${qty > 0 ? 'border-orange-500 ring-2 ring-orange-100 dark:ring-orange-950' : (isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white')} hover:border-orange-400 transition-all flex flex-col justify-between min-h-[145px]`;
-                
-                card.innerHTML = `
-                    ${badge}
-                    <div onclick="addToCart('${item.id}')" class="cursor-pointer">
-                        <div class="w-10 h-10 rounded-xl ${isDarkMode ? 'bg-gray-700 text-orange-400' : 'bg-orange-50 text-gray-800'} flex items-center justify-center text-xl mb-2">${item.emoji || '🍽️'}</div>
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">${item.category}</span>
-                        <h3 class="font-bold text-sm leading-snug line-clamp-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}">${item.name}</h3>
-                        ${descHtml}
-                        <p class="font-extrabold text-orange-500 text-base mt-1">$${Number(item.price).toFixed(2)}</p>
-                    </div>
-                    <div class="mt-2.5 pt-2 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'} flex items-center justify-between gap-1">
-                        <button type="button" onclick="event.stopPropagation(); updateCartQty('${item.id}', -1)" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 font-extrabold text-gray-700 dark:text-white flex items-center justify-center text-sm active:scale-95">−</button>
-                        <span class="text-xs font-extrabold ${isDarkMode ? 'text-white' : 'text-gray-900'}">${qty}</span>
-                        <button type="button" onclick="event.stopPropagation(); updateCartQty('${item.id}', 1)" class="w-8 h-8 rounded-lg bg-orange-500 hover:bg-orange-600 font-extrabold text-white flex items-center justify-center text-sm active:scale-95">+</button>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
+                filtered.forEach(item => {
+                    const inCart = cart.find(c => c.id === item.id);
+                    const qty = inCart ? inCart.qty : 0;
+                    const badge = qty > 0 ? `<span class="absolute top-2.5 right-2.5 bg-orange-500 text-white text-xs font-extrabold w-6 h-6 rounded-full flex items-center justify-center shadow-xs">${qty}</span>` : '';
+                    const descHtml = item.desc ? `<p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">${item.desc}</p>` : '';
+
+                    const card = document.createElement('div');
+                    card.className = `relative p-3.5 rounded-2xl border ${qty > 0 ? 'border-orange-500 ring-2 ring-orange-100 dark:ring-orange-950' : (isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white')} hover:border-orange-400 transition-all flex flex-col justify-between min-h-[145px]`;
+                    
+                    card.innerHTML = `
+                        ${badge}
+                        <div onclick="addToCart('${item.id}')" class="cursor-pointer">
+                            <div class="w-10 h-10 rounded-xl ${isDarkMode ? 'bg-gray-700 text-orange-400' : 'bg-orange-50 text-gray-800'} flex items-center justify-center text-xl mb-2">${item.emoji || '🍽️'}</div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">${item.category}</span>
+                            <h3 class="font-bold text-sm leading-snug line-clamp-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}">${item.name}</h3>
+                            ${descHtml}
+                            <p class="font-extrabold text-orange-500 text-base mt-1">$${Number(item.price).toFixed(2)}</p>
+                        </div>
+                        <div class="mt-2.5 pt-2 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'} flex items-center justify-between gap-1">
+                            <button type="button" onclick="event.stopPropagation(); updateCartQty('${item.id}', -1)" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 font-extrabold text-gray-700 dark:text-white flex items-center justify-center text-sm active:scale-95">−</button>
+                            <span class="text-xs font-extrabold ${isDarkMode ? 'text-white' : 'text-gray-900'}">${qty}</span>
+                            <button type="button" onclick="event.stopPropagation(); updateCartQty('${item.id}', 1)" class="w-8 h-8 rounded-lg bg-orange-500 hover:bg-orange-600 font-extrabold text-white flex items-center justify-center text-sm active:scale-95">+</button>
+                        </div>
+                    `;
+                    gridDiv.appendChild(card);
+                });
+                container.appendChild(gridDiv);
+
+            } else {
+                // Modo Lista
+                const listDiv = document.createElement('div');
+                listDiv.className = 'space-y-2';
+
+                filtered.forEach(item => {
+                    const inCart = cart.find(c => c.id === item.id);
+                    const qty = inCart ? inCart.qty : 0;
+                    const descHtml = item.desc ? `<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">${item.desc}</p>` : '';
+
+                    const row = document.createElement('div');
+                    row.className = `p-3 rounded-2xl border ${qty > 0 ? 'border-orange-500 ring-2 ring-orange-100 dark:ring-orange-950' : (isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white')} flex items-center justify-between gap-3 transition-all`;
+                    
+                    row.innerHTML = `
+                        <div onclick="addToCart('${item.id}')" class="flex items-center gap-3.5 flex-1 min-w-0 cursor-pointer">
+                            <div class="w-12 h-12 rounded-xl ${isDarkMode ? 'bg-gray-700 text-orange-400' : 'bg-orange-50 text-gray-800'} flex items-center justify-center text-2xl shrink-0">${item.emoji || '🍽️'}</div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">${item.category}</span>
+                                </div>
+                                <h3 class="font-bold text-sm truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}">${item.name}</h3>
+                                ${descHtml}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 shrink-0">
+                            <span class="font-extrabold text-orange-500 text-base">$${Number(item.price).toFixed(2)}</span>
+                            <div class="flex items-center border ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-200'} rounded-xl overflow-hidden p-0.5 gap-1">
+                                <button type="button" onclick="updateCartQty('${item.id}', -1)" class="w-8 h-8 rounded-lg bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 font-extrabold text-gray-700 dark:text-white flex items-center justify-center text-sm shadow-xs active:scale-95">−</button>
+                                <span class="w-7 text-center text-xs font-extrabold ${isDarkMode ? 'text-white' : 'text-gray-900'}">${qty}</span>
+                                <button type="button" onclick="updateCartQty('${item.id}', 1)" class="w-8 h-8 rounded-lg bg-orange-500 hover:bg-orange-600 font-extrabold text-white flex items-center justify-center text-sm shadow-xs active:scale-95">+</button>
+                            </div>
+                        </div>
+                    `;
+                    listDiv.appendChild(row);
+                });
+                container.appendChild(listDiv);
+            }
         }
 
         function setPaymentMethod(method) {
@@ -1407,3 +1473,5 @@
     </script>
 </body>
 </html>
+
+```
