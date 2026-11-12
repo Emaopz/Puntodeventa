@@ -387,7 +387,6 @@
         // CARGAR DATOS DESDE FIREBASE FIRESTORE
         async function loadFromFirebase() {
             try {
-                // Cargar Configuración (Nombre del negocio y contador)
                 const configDoc = await db.collection('fastteam_config').doc('settings').get();
                 if (configDoc.exists) {
                     const data = configDoc.data();
@@ -395,7 +394,6 @@
                     if (data.orderCounter) orderCounter = data.orderCounter;
                 }
 
-                // Cargar Menú
                 const menuSnapshot = await db.collection('fastteam_menu').get();
                 if (!menuSnapshot.empty) {
                     menuItems = [];
@@ -404,13 +402,11 @@
                     });
                 } else {
                     menuItems = [...DEFAULT_MENU];
-                    // Guardar menú por defecto en Firebase si está vacío
                     for (let item of menuItems) {
                         await db.collection('fastteam_menu').doc(item.id).set(item);
                     }
                 }
 
-                // Cargar Órdenes / Historial
                 const ordersSnapshot = await db.collection('fastteam_orders').orderBy('number', 'desc').get();
                 if (!ordersSnapshot.empty) {
                     orders = [];
@@ -816,30 +812,34 @@
             }
         }
 
-        // GUARDAR ORDEN EN FIREBASE
+        // GUARDAR ORDEN EN FIREBASE (OPTIMIZADO Y SEGURO)
         async function finalizeOrder() {
             if (cart.length === 0) return;
 
-            const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-            const rawClient = document.getElementById('order-client-input').value.trim();
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const timeStr = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const checkoutBtn = document.getElementById('checkout-btn');
+            checkoutBtn.disabled = true;
+            checkoutBtn.textContent = 'Guardando...';
 
-            if (editingOrderId !== null) {
-                const idx = orders.findIndex(o => o.id === editingOrderId);
-                if (idx !== -1) {
-                    const num = orders[idx].number;
-                    const updatedOrder = {
-                        ...orders[idx],
-                        client: rawClient || `Cliente ${num}`,
-                        items: cart.map(i => ({ ...i })),
-                        total: totalAmount,
-                        paymentMethod: currentPaymentMethod,
-                        updatedAt: timeStr
-                    };
+            try {
+                const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+                const rawClient = document.getElementById('order-client-input').value.trim();
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const timeStr = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-                    try {
+                if (editingOrderId !== null) {
+                    const idx = orders.findIndex(o => o.id === editingOrderId);
+                    if (idx !== -1) {
+                        const num = orders[idx].number;
+                        const updatedOrder = {
+                            ...orders[idx],
+                            client: rawClient || `Cliente ${num}`,
+                            items: cart.map(i => ({ ...i })),
+                            total: totalAmount,
+                            paymentMethod: currentPaymentMethod,
+                            updatedAt: timeStr
+                        };
+
                         await db.collection('fastteam_orders').doc(editingOrderId).set(updatedOrder);
                         orders[idx] = updatedOrder;
 
@@ -854,29 +854,25 @@
                         renderHistory();
                         toggleMobileCart(false);
                         showToast('💾', `Orden #${num} actualizada en la nube`);
-                    } catch (e) {
-                        showToast('❌', 'Error al actualizar orden en Firebase');
+                        return;
                     }
-                    return;
                 }
-            }
 
-            const clientName = rawClient || `Cliente ${orderCounter}`;
-            const newOrder = {
-                id: 'ord_' + Date.now(),
-                number: orderCounter,
-                client: clientName,
-                date: dateStr,
-                time: timeStr,
-                paymentMethod: currentPaymentMethod,
-                items: cart.map(i => ({ ...i })),
-                total: totalAmount
-            };
+                const clientName = rawClient || `Cliente ${orderCounter}`;
+                const newOrder = {
+                    id: 'ord_' + Date.now(),
+                    number: orderCounter,
+                    client: clientName,
+                    date: dateStr,
+                    time: timeStr,
+                    paymentMethod: currentPaymentMethod,
+                    items: cart.map(i => ({ ...i })),
+                    total: totalAmount
+                };
 
-            try {
-                // Guardar orden y actualizar contador en la nube
                 await db.collection('fastteam_orders').doc(newOrder.id).set(newOrder);
                 orderCounter += 1;
+                
                 await db.collection('fastteam_config').doc('settings').set({
                     orderCounter: orderCounter,
                     businessName: businessName
@@ -894,8 +890,13 @@
                 renderHistory();
                 toggleMobileCart(false);
                 showToast('✅', `Orden #${newOrder.number} guardada en Firebase`);
+
             } catch (e) {
-                showToast('❌', 'Error al guardar la orden en la nube');
+                console.error("Error al finalizar orden:", e);
+                showToast('❌', 'Error al guardar. Revisa tu conexión.');
+            } finally {
+                checkoutBtn.disabled = false;
+                checkoutBtn.textContent = 'Finalizar Orden / Cobrar';
             }
         }
 
@@ -1346,5 +1347,3 @@
     </script>
 </body>
 </html>
-
-```
