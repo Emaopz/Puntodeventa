@@ -1,10 +1,3 @@
-Para que tu punto de venta **Fastteam** guarde y sincronice tanto el **historial de pedidos** como el **nombre del negocio** utilizando **Firebase (Firestore)** en lugar de depender únicamente del navegador (`localStorage`), necesitamos adaptar las funciones que leen y escriben datos.
-
-Como Firestore opera de forma **asíncrona** (por internet), se requiere actualizar la lógica para que cargue los datos de la nube al iniciar y los guarde cada vez que agregues un producto, cambies el nombre del negocio o finalices una orden.
-
-Aquí tienes el código completo, corregido y listo con tu configuración de Firebase integrada:
-
-```html
 <!DOCTYPE html>
 <html lang="es" id="app-html">
 <head>
