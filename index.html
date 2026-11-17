@@ -1,3 +1,4 @@
+﻿
 <!DOCTYPE html>
 <html lang="es" id="app-html">
 <head>
@@ -216,7 +217,7 @@
         </div>
 
         <!-- ==========================================
-             VISTA 2: HISTORIAL DE ÓRDENES
+             VISTA 2: HISTORIAL DE ÓRDENES Y CORTE DE CAJA
              ========================================== -->
         <div id="view-history" class="hidden h-full overflow-y-auto p-4 sm:p-6 pb-24">
             <div class="max-w-4xl mx-auto space-y-5">
@@ -224,18 +225,21 @@
                 <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4 dark:bg-gray-800 dark:border-gray-700">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Corte Total Registrado</p>
+                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Ventas Acumuladas (Turno Actual)</p>
                             <div class="flex items-baseline gap-3 mt-1">
                                 <span id="total-sales-amount" class="text-3xl font-extrabold text-emerald-600">$0.00</span>
                                 <span id="total-orders-count" class="text-sm font-semibold text-gray-500">0 órdenes</span>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
+                            <button onclick="performDailyCut()" class="px-4 py-2.5 text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5">
+                                <span>🔄</span> <span>Hacer Corte de Día / Cerrar Caja</span>
+                            </button>
                             <button onclick="downloadDailyPDF()" class="px-3.5 py-2.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 rounded-xl shadow-xs transition-colors flex items-center gap-1.5">
-                                <span>📄</span> <span>Descargar PDF</span>
+                                <span>📄</span> <span>PDF Turno</span>
                             </button>
                             <button onclick="askClearHistory()" class="px-3.5 py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors dark:bg-red-950/50 dark:text-red-400">
-                                Borrar Historial
+                                Borrar
                             </button>
                         </div>
                     </div>
@@ -265,9 +269,22 @@
                     </div>
                 </div>
 
-                <!-- Lista de Órdenes Guardadas -->
-                <div class="space-y-3" id="history-orders-container">
-                    <!-- Órdenes renderizadas por JS -->
+                <!-- SECCIÓN: HISTORIAL DE CORTES ANTERIORES -->
+                <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-3 dark:bg-gray-800 dark:border-gray-700">
+                    <h3 class="font-extrabold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                        <span>📊</span> <span>Historial de Cortes de Caja Guardados (<span id="cuts-count">0</span>)</span>
+                    </h3>
+                    <div id="saved-cuts-container" class="space-y-2">
+                        <!-- Cortes anteriores guardados por JS -->
+                    </div>
+                </div>
+
+                <!-- Lista de Órdenes Actuales -->
+                <div class="space-y-3">
+                    <h3 class="font-extrabold text-sm text-gray-900 dark:text-white px-1">📋 Órdenes del Turno Actual</h3>
+                    <div id="history-orders-container" class="space-y-3">
+                        <!-- Órdenes renderizadas por JS -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -419,6 +436,54 @@
 
     </main>
 
+    <!-- ==========================================
+         MODAL DE PERSONALIZACIÓN DE INGREDIENTES
+         ========================================== -->
+    <div id="ingredients-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700 space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 id="modal-prod-name" class="font-extrabold text-lg text-gray-900 dark:text-white">Personalizar Ingredientes</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Desmarca los ingredientes que el cliente no quiera.</p>
+                </div>
+                <button onclick="closeIngredientsModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-bold flex items-center justify-center">✕</button>
+            </div>
+
+            <!-- Lista de checkboxes de ingredientes -->
+            <div class="grid grid-cols-2 gap-2.5 py-2" id="ingredients-checkboxes-container">
+                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
+                    <input type="checkbox" data-ingredient="Cebolla" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
+                    <span class="text-sm font-medium dark:text-gray-200">🧅 Cebolla</span>
+                </label>
+                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
+                    <input type="checkbox" data-ingredient="Jitomate" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
+                    <span class="text-sm font-medium dark:text-gray-200">🍅 Jitomate</span>
+                </label>
+                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
+                    <input type="checkbox" data-ingredient="Lechuga" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
+                    <span class="text-sm font-medium dark:text-gray-200">🥬 Lechuga</span>
+                </label>
+                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
+                    <input type="checkbox" data-ingredient="Chile" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
+                    <span class="text-sm font-medium dark:text-gray-200">🌶️ Chile</span>
+                </label>
+                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
+                    <input type="checkbox" data-ingredient="Mayonesa" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
+                    <span class="text-sm font-medium dark:text-gray-200">⚪ Mayonesa</span>
+                </label>
+                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
+                    <input type="checkbox" data-ingredient="Catsup" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
+                    <span class="text-sm font-medium dark:text-gray-200">🔴 Catsup</span>
+                </label>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button onclick="closeIngredientsModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 font-bold text-xs rounded-xl text-gray-700 dark:text-gray-200">Cancelar</button>
+                <button onclick="confirmAddToCartWithIngredients()" class="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 font-bold text-xs text-white rounded-xl shadow-md">Agregar a la Orden</button>
+            </div>
+        </div>
+    </div>
+
     <!-- NOTIFICACIÓN TOAST -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
         <div class="bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-gray-800 dark:bg-white dark:text-gray-900">
@@ -446,6 +511,7 @@
         let menuItems = [];
         let cart = [];
         let orders = [];
+        let savedCuts = [];
         let selectedCategory = 'Todos';
         let orderCounter = 1;
         let editingOrderId = null;
@@ -455,6 +521,7 @@
         let businessIconData = { type: 'emoji', value: '🍔' };
         let tempUploadedImageBase64 = null;
         let productViewMode = 'grid'; // 'grid' o 'list'
+        let currentCustomizingProduct = null;
 
         window.onload = function () {
             loadFromStorage();
@@ -469,6 +536,7 @@
             try {
                 const savedMenu = localStorage.getItem('pos_menu_items_v2');
                 const savedOrders = localStorage.getItem('pos_orders_history_v2');
+                const savedCutsData = localStorage.getItem('pos_saved_cuts_history_v1');
                 const savedCounter = localStorage.getItem('pos_order_counter_v2');
                 const savedTheme = localStorage.getItem('pos_dark_mode');
                 const savedBusinessName = localStorage.getItem('pos_business_name_v3');
@@ -477,6 +545,7 @@
 
                 menuItems = savedMenu ? JSON.parse(savedMenu) : [...DEFAULT_MENU];
                 orders = savedOrders ? JSON.parse(savedOrders) : [];
+                savedCuts = savedCutsData ? JSON.parse(savedCutsData) : [];
                 orderCounter = savedCounter ? parseInt(savedCounter, 10) : (orders.length + 1);
                 businessName = savedBusinessName || 'Mi Negocio POS';
                 productViewMode = savedViewMode || 'grid';
@@ -505,6 +574,7 @@
             } catch (e) {
                 menuItems = [...DEFAULT_MENU];
                 orders = [];
+                savedCuts = [];
                 orderCounter = 1;
                 businessName = 'Mi Negocio POS';
                 businessIconData = { type: 'emoji', value: '🍔' };
@@ -601,10 +671,6 @@
             const titleEl = document.getElementById('header-title');
             const subtitleEl = document.getElementById('header-subtitle');
             const cartTitle = document.getElementById('cart-title');
-
-            const tabSell = document.getElementById('tab-sell');
-            const tabHistory = document.getElementById('tab-history');
-            const tabManage = document.getElementById('tab-manage');
 
             if (isDarkMode) {
                 body.classList.replace('bg-gray-100', 'bg-gray-900');
@@ -766,27 +832,27 @@
                 gridDiv.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3';
 
                 filtered.forEach(item => {
-                    const inCart = cart.find(c => c.id === item.id);
-                    const qty = inCart ? inCart.qty : 0;
-                    const badge = qty > 0 ? `<span class="absolute top-2.5 right-2.5 bg-orange-500 text-white text-xs font-extrabold w-6 h-6 rounded-full flex items-center justify-center shadow-xs">${qty}</span>` : '';
+                    const totalQty = cart.filter(c => c.baseId === item.id).reduce((sum, c) => sum + c.qty, 0);
+                    const badge = totalQty > 0 ? `<span class="absolute top-2.5 right-2.5 bg-orange-500 text-white text-xs font-extrabold w-6 h-6 rounded-full flex items-center justify-center shadow-xs">${totalQty}</span>` : '';
                     const descHtml = item.desc ? `<p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">${item.desc}</p>` : '';
 
                     const card = document.createElement('div');
-                    card.className = `relative p-3.5 rounded-2xl border ${qty > 0 ? 'border-orange-500 ring-2 ring-orange-100 dark:ring-orange-950' : (isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white')} hover:border-orange-400 transition-all flex flex-col justify-between min-h-[145px]`;
+                    card.className = `relative p-3.5 rounded-2xl border ${totalQty > 0 ? 'border-orange-500 ring-2 ring-orange-100 dark:ring-orange-950' : (isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white')} hover:border-orange-400 transition-all flex flex-col justify-between min-h-[145px] cursor-pointer`;
                     
+                    card.onclick = () => handleProductClick(item.id);
+
                     card.innerHTML = `
                         ${badge}
-                        <div onclick="addToCart('${item.id}')" class="cursor-pointer">
+                        <div>
                             <div class="w-10 h-10 rounded-xl ${isDarkMode ? 'bg-gray-700 text-orange-400' : 'bg-orange-50 text-gray-800'} flex items-center justify-center text-xl mb-2">${item.emoji || '🍽️'}</div>
                             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">${item.category}</span>
                             <h3 class="font-bold text-sm leading-snug line-clamp-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}">${item.name}</h3>
                             ${descHtml}
                             <p class="font-extrabold text-orange-500 text-base mt-1">$${Number(item.price).toFixed(2)}</p>
                         </div>
-                        <div class="mt-2.5 pt-2 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'} flex items-center justify-between gap-1">
-                            <button type="button" onclick="event.stopPropagation(); updateCartQty('${item.id}', -1)" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 font-extrabold text-gray-700 dark:text-white flex items-center justify-center text-sm active:scale-95">−</button>
-                            <span class="text-xs font-extrabold ${isDarkMode ? 'text-white' : 'text-gray-900'}">${qty}</span>
-                            <button type="button" onclick="event.stopPropagation(); updateCartQty('${item.id}', 1)" class="w-8 h-8 rounded-lg bg-orange-500 hover:bg-orange-600 font-extrabold text-white flex items-center justify-center text-sm active:scale-95">+</button>
+                        <div class="mt-2.5 pt-2 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'} flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-gray-400">${(item.category === 'Hamburguesas' || item.category === 'Hot Dogs') ? '⚙️ Personalizar' : '➕ Agregar'}</span>
+                            <span class="w-7 h-7 rounded-lg bg-orange-500 text-white font-extrabold flex items-center justify-center text-xs">+</span>
                         </div>
                     `;
                     gridDiv.appendChild(card);
@@ -799,15 +865,16 @@
                 listDiv.className = 'space-y-2';
 
                 filtered.forEach(item => {
-                    const inCart = cart.find(c => c.id === item.id);
-                    const qty = inCart ? inCart.qty : 0;
+                    const totalQty = cart.filter(c => c.baseId === item.id).reduce((sum, c) => sum + c.qty, 0);
                     const descHtml = item.desc ? `<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">${item.desc}</p>` : '';
 
                     const row = document.createElement('div');
-                    row.className = `p-3 rounded-2xl border ${qty > 0 ? 'border-orange-500 ring-2 ring-orange-100 dark:ring-orange-950' : (isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white')} flex items-center justify-between gap-3 transition-all`;
+                    row.className = `p-3 rounded-2xl border ${totalQty > 0 ? 'border-orange-500 ring-2 ring-orange-100 dark:ring-orange-950' : (isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white')} flex items-center justify-between gap-3 transition-all cursor-pointer`;
                     
+                    row.onclick = () => handleProductClick(item.id);
+
                     row.innerHTML = `
-                        <div onclick="addToCart('${item.id}')" class="flex items-center gap-3.5 flex-1 min-w-0 cursor-pointer">
+                        <div class="flex items-center gap-3.5 flex-1 min-w-0">
                             <div class="w-12 h-12 rounded-xl ${isDarkMode ? 'bg-gray-700 text-orange-400' : 'bg-orange-50 text-gray-800'} flex items-center justify-center text-2xl shrink-0">${item.emoji || '🍽️'}</div>
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-2">
@@ -819,17 +886,91 @@
                         </div>
                         <div class="flex items-center gap-4 shrink-0">
                             <span class="font-extrabold text-orange-500 text-base">$${Number(item.price).toFixed(2)}</span>
-                            <div class="flex items-center border ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-200'} rounded-xl overflow-hidden p-0.5 gap-1">
-                                <button type="button" onclick="updateCartQty('${item.id}', -1)" class="w-8 h-8 rounded-lg bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 font-extrabold text-gray-700 dark:text-white flex items-center justify-center text-sm shadow-xs active:scale-95">−</button>
-                                <span class="w-7 text-center text-xs font-extrabold ${isDarkMode ? 'text-white' : 'text-gray-900'}">${qty}</span>
-                                <button type="button" onclick="updateCartQty('${item.id}', 1)" class="w-8 h-8 rounded-lg bg-orange-500 hover:bg-orange-600 font-extrabold text-white flex items-center justify-center text-sm shadow-xs active:scale-95">+</button>
-                            </div>
+                            <button type="button" class="px-3 py-1.5 bg-orange-500 text-white font-bold text-xs rounded-xl shadow-xs">
+                                ${(item.category === 'Hamburguesas' || item.category === 'Hot Dogs') ? '⚙️ Ingredientes' : '➕ Agregar'}
+                            </button>
                         </div>
                     `;
                     listDiv.appendChild(row);
                 });
                 container.appendChild(listDiv);
             }
+        }
+
+        function handleProductClick(id) {
+            const prod = menuItems.find(p => p.id === id);
+            if (!prod) return;
+
+            if (prod.category === 'Hamburguesas' || prod.category === 'Hot Dogs') {
+                currentCustomizingProduct = prod;
+                document.getElementById('modal-prod-name').textContent = `Personalizar: ${prod.name}`;
+                const checkboxes = document.querySelectorAll('#ingredients-checkboxes-container input[type="checkbox"]');
+                checkboxes.forEach(cb => cb.checked = true);
+                document.getElementById('ingredients-modal').classList.remove('hidden');
+            } else {
+                addToCartDirect(prod.id, prod.name, prod.price, prod.emoji, '');
+            }
+        }
+
+        function closeIngredientsModal() {
+            document.getElementById('ingredients-modal').classList.add('hidden');
+            currentCustomizingProduct = null;
+        }
+
+        function confirmAddToCartWithIngredients() {
+            if (!currentCustomizingProduct) return;
+
+            const checkboxes = document.querySelectorAll('#ingredients-checkboxes-container input[type="checkbox"]');
+            let removedIngredients = [];
+            checkboxes.forEach(cb => {
+                if (!cb.checked) {
+                    removedIngredients.push(cb.getAttribute('data-ingredient'));
+                }
+            });
+
+            let customNote = '';
+            if (removedIngredients.length > 0) {
+                customNote = `Sin ${removedIngredients.join(', ')}`;
+            }
+
+            addToCartDirect(currentCustomizingProduct.id, currentCustomizingProduct.name, currentCustomizingProduct.price, currentCustomizingProduct.emoji, customNote);
+            closeIngredientsModal();
+        }
+
+        function addToCartDirect(baseId, name, price, emoji, note) {
+            const cartItemId = `${baseId}_${note}`;
+            const existing = cart.find(c => c.cartItemId === cartItemId);
+
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({
+                    cartItemId,
+                    baseId,
+                    name,
+                    price,
+                    emoji,
+                    note,
+                    qty: 1
+                });
+            }
+
+            renderMenu();
+            renderCart();
+            showToast('🛒', `${name} agregado al carrito`);
+        }
+
+        function updateCartQty(cartItemId, delta) {
+            const index = cart.findIndex(c => c.cartItemId === cartItemId);
+            if (index === -1) return;
+
+            cart[index].qty += delta;
+            if (cart[index].qty <= 0) {
+                cart.splice(index, 1);
+            }
+
+            renderMenu();
+            renderCart();
         }
 
         function setPaymentMethod(method) {
@@ -850,37 +991,6 @@
                 cashBox.classList.add('hidden');
                 transferBox.classList.remove('hidden');
             }
-        }
-
-        function addToCart(id) {
-            const prod = menuItems.find(p => p.id === id);
-            if (!prod) return;
-
-            const existing = cart.find(c => c.id === id);
-            if (existing) {
-                existing.qty += 1;
-            } else {
-                cart.push({ ...prod, qty: 1 });
-            }
-
-            renderMenu();
-            renderCart();
-        }
-
-        function updateCartQty(id, delta) {
-            const index = cart.findIndex(c => c.id === id);
-            if (index === -1) {
-                if (delta > 0) addToCart(id);
-                return;
-            }
-
-            cart[index].qty += delta;
-            if (cart[index].qty <= 0) {
-                cart.splice(index, 1);
-            }
-
-            renderMenu();
-            renderCart();
         }
 
         function askClearCart() {
@@ -953,6 +1063,7 @@
 
             cart.forEach(item => {
                 const sub = item.price * item.qty;
+                const noteHtml = item.note ? `<p class="text-[11px] font-semibold text-amber-600 dark:text-amber-400">⚠️ ${item.note}</p>` : '';
                 const row = document.createElement('div');
                 row.className = isDarkMode ? 'flex items-center justify-between gap-2 p-2.5 rounded-xl bg-gray-700/50 border border-gray-700' : 'flex items-center justify-between gap-2 p-2.5 rounded-xl bg-gray-50 border border-gray-100';
                 row.innerHTML = `
@@ -960,14 +1071,15 @@
                         <span class="text-xl shrink-0">${item.emoji || '🍽️'}</span>
                         <div class="min-w-0">
                             <p class="font-bold text-sm truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}">${item.name}</p>
+                            ${noteHtml}
                             <p class="text-xs text-gray-500">$${Number(item.price).toFixed(2)} c/u</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <div class="flex items-center border ${isDarkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-200'} rounded-lg overflow-hidden">
-                            <button type="button" onclick="updateCartQty('${item.id}', -1)" class="w-7 h-7 flex items-center justify-center font-bold">−</button>
+                            <button type="button" onclick="updateCartQty('${item.cartItemId}', -1)" class="w-7 h-7 flex items-center justify-center font-bold">−</button>
                             <span class="w-7 text-center text-xs font-extrabold">${item.qty}</span>
-                            <button type="button" onclick="updateCartQty('${item.id}', 1)" class="w-7 h-7 flex items-center justify-center font-bold text-orange-500">+</button>
+                            <button type="button" onclick="updateCartQty('${item.cartItemId}', 1)" class="w-7 h-7 flex items-center justify-center font-bold text-orange-500">+</button>
                         </div>
                         <span class="font-extrabold text-sm w-16 text-right ${isDarkMode ? 'text-white' : 'text-gray-900'}">$${sub.toFixed(2)}</span>
                     </div>
@@ -1013,6 +1125,13 @@
             const dateStr = now.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
             const timeStr = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
 
+            let receivedAmt = 0;
+            let changeAmt = 0;
+            if (currentPaymentMethod === 'Efectivo') {
+                receivedAmt = parseFloat(document.getElementById('payment-received-input').value) || totalAmount;
+                changeAmt = Math.max(0, receivedAmt - totalAmount);
+            }
+
             if (editingOrderId !== null) {
                 const idx = orders.findIndex(o => o.id === editingOrderId);
                 if (idx !== -1) {
@@ -1021,6 +1140,8 @@
                     orders[idx].items = cart.map(i => ({ ...i }));
                     orders[idx].total = totalAmount;
                     orders[idx].paymentMethod = currentPaymentMethod;
+                    orders[idx].paymentReceived = receivedAmt;
+                    orders[idx].changeAmount = changeAmt;
                     orders[idx].updatedAt = timeStr;
 
                     saveOrdersToStorage();
@@ -1047,6 +1168,8 @@
                 date: dateStr,
                 time: timeStr,
                 paymentMethod: currentPaymentMethod,
+                paymentReceived: receivedAmt,
+                changeAmount: changeAmt,
                 items: cart.map(i => ({ ...i })),
                 total: totalAmount
             };
@@ -1074,7 +1197,7 @@
             editingOrderId = ord.id;
             cart = ord.items.map(i => ({ ...i }));
             document.getElementById('order-client-input').value = ord.client;
-            document.getElementById('payment-received-input').value = '';
+            document.getElementById('payment-received-input').value = ord.paymentReceived || '';
             setPaymentMethod(ord.paymentMethod || 'Efectivo');
 
             switchTab('sell');
@@ -1106,14 +1229,123 @@
 
         function askClearHistory() {
             if (orders.length === 0) return;
-            if (!confirm('¿Borrar todo el historial de ventas?')) return;
+            if (!confirm('¿Borrar todo el historial de ventas del turno?')) return;
             orders = [];
             orderCounter = 1;
             if (editingOrderId !== null) cancelEditOrder();
             saveOrdersToStorage();
             renderCart();
             renderHistory();
-            showToast('🗑️', 'Historial reiniciado');
+            showToast('🗑️', 'Historial del turno reiniciado');
+        }
+
+        function performDailyCut() {
+            if (orders.length === 0) {
+                showToast('⚠️', 'No hay órdenes en el turno actual para cerrar');
+                return;
+            }
+
+            if (!confirm('¿Deseas realizar el corte de caja? Las órdenes actuales se archivarán como un nuevo corte y la lista del turno se reiniciará.')) {
+                return;
+            }
+
+            const now = new Date();
+            const cutDateStr = now.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const cutTimeStr = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+            const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
+            const cashOrders = orders.filter(o => (o.paymentMethod || 'Efectivo') === 'Efectivo');
+            const transferOrders = orders.filter(o => o.paymentMethod === 'Transferencia');
+            const totalCash = cashOrders.reduce((sum, o) => sum + o.total, 0);
+            const totalTransfer = transferOrders.reduce((sum, o) => sum + o.total, 0);
+
+            const newCut = {
+                id: 'cut_' + Date.now(),
+                date: cutDateStr,
+                time: cutTimeStr,
+                totalOrders: orders.length,
+                totalSales: totalSales,
+                totalCash: totalCash,
+                totalTransfer: totalTransfer,
+                orders: [...orders]
+            };
+
+            savedCuts.unshift(newCut);
+            try {
+                localStorage.setItem('pos_saved_cuts_history_v1', JSON.stringify(savedCuts));
+            } catch (e) {}
+
+            orders = [];
+            saveOrdersToStorage();
+            if (editingOrderId !== null) cancelEditOrder();
+
+            renderHistory();
+            renderCart();
+            showToast('🎉', '¡Corte de caja realizado con éxito!');
+        }
+
+        function deleteSavedCut(cutId) {
+            if (!confirm('¿Eliminar este registro de corte de caja guardado?')) return;
+            savedCuts = savedCuts.filter(c => c.id !== cutId);
+            try {
+                localStorage.setItem('pos_saved_cuts_history_v1', JSON.stringify(savedCuts));
+            } catch (e) {}
+            renderHistory();
+            showToast('🗑️', 'Corte guardado eliminado');
+        }
+
+        function downloadSavedCutPDF(cutId) {
+            const cut = savedCuts.find(c => c.id === cutId);
+            if (!cut || !window.jspdf || !window.jspdf.jsPDF) return;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(18);
+            doc.text(`Corte de Caja - ${businessName}`, 14, 15);
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Fecha del Corte: ${cut.date} - ${cut.time}`, 14, 22);
+            doc.text(`Total órdenes: ${cut.totalOrders}`, 14, 28);
+            doc.text(`Efectivo Físico: $${cut.totalCash.toFixed(2)}`, 120, 22);
+            doc.text(`Transferencias: $${cut.totalTransfer.toFixed(2)}`, 120, 28);
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text(`TOTAL GENERAL: $${cut.totalSales.toFixed(2)}`, 14, 38);
+            doc.line(14, 42, 196, 42);
+
+            let y = 50;
+            doc.setFontSize(11);
+            doc.text("Detalle de Órdenes del Corte:", 14, y);
+            y += 8;
+
+            cut.orders.forEach(o => {
+                if (y > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(10);
+                const payInfo = o.paymentMethod === 'Transferencia' ? '[Transferencia]' : `[Efectivo - Pagó: $${(o.paymentReceived || o.total).toFixed(2)}, Cambio: $${(o.changeAmount || 0).toFixed(2)}]`;
+                doc.text(`#${o.number} - ${o.client} (${o.date} ${o.time}) ${payInfo}`, 14, y);
+                doc.text(`$${o.total.toFixed(2)}`, 196, y, { align: 'right' });
+                y += 5;
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(9);
+                o.items.forEach(i => {
+                    const noteStr = i.note ? ` - [${i.note}]` : '';
+                    doc.text(`   • ${i.qty}x ${i.name}${noteStr} ($${i.price} c/u)`, 14, y);
+                    y += 4;
+                });
+                y += 3;
+            });
+
+            doc.save(`Corte-Caja-${cut.date.replace(/\//g, '-')}.pdf`);
+            showToast('📄', 'PDF del corte descargado');
         }
 
         function saveOrdersToStorage() {
@@ -1125,6 +1357,8 @@
 
         function renderHistory() {
             const container = document.getElementById('history-orders-container');
+            const cutsContainer = document.getElementById('saved-cuts-container');
+            const cutsCountEl = document.getElementById('cuts-count');
             const badge = document.getElementById('history-badge');
             const totalSalesEl = document.getElementById('total-sales-amount');
             const totalOrdersEl = document.getElementById('total-orders-count');
@@ -1154,30 +1388,59 @@
             transferAmountEl.textContent = `$${totalTransfer.toFixed(2)}`;
             transferCountEl.textContent = `${transferOrders.length} ${transferOrders.length === 1 ? 'transferencia' : 'transferencias'}`;
 
+            cutsCountEl.textContent = savedCuts.length;
+            cutsContainer.innerHTML = '';
+            if (savedCuts.length === 0) {
+                cutsContainer.innerHTML = `<p class="text-xs text-gray-400 py-1">No hay cortes de caja anteriores guardados.</p>`;
+            } else {
+                savedCuts.forEach(cut => {
+                    const cutRow = document.createElement('div');
+                    cutRow.className = isDarkMode ? 'p-3 rounded-xl bg-gray-700/40 border border-gray-700 flex items-center justify-between gap-2' : 'p-3 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-between gap-2';
+                    cutRow.innerHTML = `
+                        <div>
+                            <p class="font-extrabold text-xs sm:text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}">📅 Corte del ${cut.date} (${cut.time})</p>
+                            <p class="text-[11px] text-gray-500">${cut.totalOrders} órdenes • Efectivo: $${cut.totalCash.toFixed(2)} | Transf: $${cut.totalTransfer.toFixed(2)}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-extrabold text-sm text-emerald-600">$${cut.totalSales.toFixed(2)}</span>
+                            <button onclick="downloadSavedCutPDF('${cut.id}')" class="px-2.5 py-1 text-xs font-bold text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-900">📄 PDF</button>
+                            <button onclick="deleteSavedCut('${cut.id}')" class="text-gray-400 hover:text-red-500 p-1">🗑️</button>
+                        </div>
+                    `;
+                    cutsContainer.appendChild(cutRow);
+                });
+            }
+
             container.innerHTML = '';
             if (orders.length === 0) {
                 container.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                    <div class="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                         <span class="text-4xl mb-3">🧾</span>
-                        <p class="font-bold text-base text-gray-700 dark:text-white">Aún no hay órdenes guardadas</p>
-                        <p class="text-xs text-gray-400 mt-1">Cuando finalices una venta aparecerá aquí</p>
+                        <p class="font-bold text-base text-gray-700 dark:text-white">No hay órdenes en el turno actual</p>
+                        <p class="text-xs text-gray-400 mt-1">Realiza ventas para verlas aquí antes del próximo corte</p>
                     </div>
                 `;
                 return;
             }
 
             orders.forEach(order => {
-                const itemsHtml = order.items.map(i => `
-                    <div class="flex items-center justify-between text-xs sm:text-sm py-1">
-                        <span class="${isDarkMode ? 'text-gray-300' : 'text-gray-700'}"><strong>${i.qty}x</strong> ${i.emoji || ''} ${i.name}</span>
-                        <span class="font-semibold text-gray-500">$${(i.price * i.qty).toFixed(2)}</span>
-                    </div>
-                `).join('');
+                const itemsHtml = order.items.map(i => {
+                    const noteText = i.note ? `<br><span class="text-[11px] font-semibold text-amber-600 dark:text-amber-400">⚠️ ${i.note}</span>` : '';
+                    return `
+                        <div class="py-1 text-xs sm:text-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="${isDarkMode ? 'text-gray-300' : 'text-gray-700'}"><strong>${i.qty}x</strong> ${i.emoji || ''} ${i.name}</span>
+                                <span class="font-semibold text-gray-500">$${(i.price * i.qty).toFixed(2)}</span>
+                            </div>
+                            ${noteText}
+                        </div>
+                    `;
+                }).join('');
 
                 const isTransfer = order.paymentMethod === 'Transferencia';
                 const paymentBadge = isTransfer
                     ? `<span class="text-[11px] font-extrabold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full dark:bg-blue-950 dark:text-blue-300">📲 Transferencia</span>`
-                    : `<span class="text-[11px] font-extrabold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full dark:bg-emerald-950 dark:text-emerald-300">💵 Efectivo</span>`;
+                    : `<span class="text-[11px] font-extrabold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full dark:bg-emerald-950 dark:text-emerald-300">💵 Efectivo (Pagó: $${(order.paymentReceived || order.total).toFixed(2)} | Cambio: $${(order.changeAmount || 0).toFixed(2)})</span>`;
 
                 const editTag = order.updatedAt ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">Editada</span>` : '';
 
@@ -1353,7 +1616,7 @@
             if (!order || !window.jspdf || !window.jspdf.jsPDF) return;
 
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ unit: 'mm', format: [80, 160] });
+            const doc = new jsPDF({ unit: 'mm', format: [80, 175] });
             let y = 12;
 
             doc.setFont('helvetica', 'bold');
@@ -1384,6 +1647,12 @@
                 y += 5;
                 doc.text(`${i.qty}x ${i.name}`, 5, y);
                 doc.text(`$${(i.price * i.qty).toFixed(2)}`, 70, y, { align: 'right' });
+                if (i.note) {
+                    y += 4;
+                    doc.setFont("helvetica", "italic");
+                    doc.text(`   (${i.note})`, 5, y);
+                    doc.setFont("helvetica", "normal");
+                }
             });
 
             y += 5;
@@ -1393,8 +1662,18 @@
             doc.setFont("helvetica", "bold");
             doc.setFontSize(11);
             doc.text(`TOTAL: $${order.total.toFixed(2)}`, 70, y, { align: 'right' });
+            y += 6;
 
-            y += 10;
+            if (order.paymentMethod === 'Efectivo') {
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "normal");
+                doc.text(`Efectivo Recibido: $${(order.paymentReceived || order.total).toFixed(2)}`, 5, y);
+                y += 4;
+                doc.text(`Cambio Entregado: $${(order.changeAmount || 0).toFixed(2)}`, 5, y);
+                y += 4;
+            }
+
+            y += 6;
             doc.setFontSize(8);
             doc.setFont("helvetica", "italic");
             doc.text("¡Gracias por su compra!", 40, y, { align: 'center' });
@@ -1405,7 +1684,7 @@
 
         function downloadDailyPDF() {
             if (orders.length === 0) {
-                showToast('⚠️', 'No hay ventas registradas');
+                showToast('⚠️', 'No hay ventas en el turno actual');
                 return;
             }
 
@@ -1418,7 +1697,7 @@
 
             doc.setFont("helvetica", "bold");
             doc.setFontSize(18);
-            doc.text(`Corte de Caja - ${businessName}`, 14, 15);
+            doc.text(`Corte Turno Actual - ${businessName}`, 14, 15);
 
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
@@ -1444,21 +1723,23 @@
                 }
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(10);
-                doc.text(`#${o.number} - ${o.client} (${o.date} ${o.time}) [${o.paymentMethod || 'Efectivo'}]`, 14, y);
+                const payInfo = o.paymentMethod === 'Transferencia' ? '[Transferencia]' : `[Efectivo | Pagó: $${(o.paymentReceived || o.total).toFixed(2)} - Cambio: $${(o.changeAmount || 0).toFixed(2)}]`;
+                doc.text(`#${o.number} - ${o.client} (${o.date} ${o.time}) ${payInfo}`, 14, y);
                 doc.text(`$${o.total.toFixed(2)}`, 196, y, { align: 'right' });
                 y += 5;
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(9);
                 o.items.forEach(i => {
-                    doc.text(`   • ${i.qty}x ${i.name} ($${i.price} c/u)`, 14, y);
+                    const noteStr = i.note ? ` - [${i.note}]` : '';
+                    doc.text(`   • ${i.qty}x ${i.name}${noteStr} ($${i.price} c/u)`, 14, y);
                     y += 4;
                 });
                 y += 3;
             });
 
-            doc.save(`Corte-Caja-${new Date().toISOString().slice(0, 10)}.pdf`);
-            showToast('📄', 'Corte diario descargado en PDF');
+            doc.save(`Corte-Turno-${new Date().toISOString().slice(0, 10)}.pdf`);
+            showToast('📄', 'Reporte del turno descargado en PDF');
         }
 
         function showToast(icon, msg) {
