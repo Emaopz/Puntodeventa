@@ -1,4 +1,3 @@
-﻿
 <!DOCTYPE html>
 <html lang="es" id="app-html">
 <head>
@@ -345,9 +344,30 @@
                                 class="hidden mt-2 w-full px-3 py-2 bg-orange-50/70 border border-orange-300 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-400 dark:bg-gray-700 dark:border-orange-500 dark:text-white">
                         </div>
 
+                        <!-- Interruptor Ingredientes ON / OFF -->
+                        <div class="sm:col-span-12 flex items-center justify-between bg-orange-50/50 p-3 rounded-xl border border-orange-200/60 dark:bg-gray-700/40 dark:border-gray-700">
+                            <div>
+                                <span class="block text-xs font-extrabold text-gray-800 dark:text-white">⚙️ Personalización de Ingredientes / Aderezos al Pedir</span>
+                                <span class="block text-[11px] text-gray-500 dark:text-gray-400">Actívalo si este producto lleva ingredientes opcionales que el cliente pueda quitar o seleccionar.</span>
+                            </div>
+                            <button type="button" id="prod-has-ingredients-btn" onclick="toggleProductIngredientsSwitch()" 
+                                class="px-4 py-2 rounded-xl text-xs font-extrabold transition-all bg-emerald-600 text-white shadow-xs">
+                                ACTIVADO (ON)
+                            </button>
+                            <input type="hidden" id="prod-has-ingredients" value="true">
+                        </div>
+
+                        <!-- Lista de Ingredientes Personalizada para este producto -->
+                        <div class="sm:col-span-12">
+                            <label class="block text-xs font-bold text-gray-600 mb-1 dark:text-gray-300">Lista de Ingredientes / Aderezos (separados por comas)</label>
+                            <input type="text" id="prod-ingredients-list" placeholder="Ej. Cebolla, Jitomate, Lechuga, Chile, Mayonesa, Catsup"
+                                class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
+                            <p class="text-[11px] text-gray-400 mt-1">Para unas papas puedes poner: <em>Mayonesa, Catsup, Queso, Chile Valentina</em>. Para hamburguesas: <em>Cebolla, Jitomate, Lechuga, Chile, Mayonesa, Catsup</em>.</p>
+                        </div>
+
                         <!-- Descripción o Ingredientes -->
                         <div class="sm:col-span-12">
-                            <label class="block text-xs font-bold text-gray-600 mb-1 dark:text-gray-300">Descripción / Ingredientes (opcional)</label>
+                            <label class="block text-xs font-bold text-gray-600 mb-1 dark:text-gray-300">Descripción general (opcional)</label>
                             <input type="text" id="prod-desc" placeholder="Ej. Salsa maggi, Valentina, inglesa, limón y Tajín"
                                 class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
                         </div>
@@ -409,7 +429,7 @@
                         </div>
                     </div>
 
-                    <!-- Nueva sección para configurar el ícono de la página -->
+                    <!-- Sección para configurar el ícono de la página -->
                     <div class="pt-3 border-t border-gray-100 dark:border-gray-700">
                         <h2 class="font-extrabold text-base text-gray-900 dark:text-white mb-2">🖼️ Ícono de la Página / Negocio</h2>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Elige un emoji rápido o sube una imagen personalizada (PNG, JPG) para el logotipo superior.</p>
@@ -444,37 +464,14 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h3 id="modal-prod-name" class="font-extrabold text-lg text-gray-900 dark:text-white">Personalizar Ingredientes</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Desmarca los ingredientes que el cliente no quiera.</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Desmarca lo que el cliente no quiera.</p>
                 </div>
                 <button onclick="closeIngredientsModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-bold flex items-center justify-center">✕</button>
             </div>
 
-            <!-- Lista de checkboxes de ingredientes -->
+            <!-- Lista de checkboxes generados dinámicamente -->
             <div class="grid grid-cols-2 gap-2.5 py-2" id="ingredients-checkboxes-container">
-                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
-                    <input type="checkbox" data-ingredient="Cebolla" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
-                    <span class="text-sm font-medium dark:text-gray-200">🧅 Cebolla</span>
-                </label>
-                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
-                    <input type="checkbox" data-ingredient="Jitomate" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
-                    <span class="text-sm font-medium dark:text-gray-200">🍅 Jitomate</span>
-                </label>
-                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
-                    <input type="checkbox" data-ingredient="Lechuga" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
-                    <span class="text-sm font-medium dark:text-gray-200">🥬 Lechuga</span>
-                </label>
-                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
-                    <input type="checkbox" data-ingredient="Chile" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
-                    <span class="text-sm font-medium dark:text-gray-200">🌶️ Chile</span>
-                </label>
-                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
-                    <input type="checkbox" data-ingredient="Mayonesa" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
-                    <span class="text-sm font-medium dark:text-gray-200">⚪ Mayonesa</span>
-                </label>
-                <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-orange-50/50 dark:hover:bg-gray-700/50">
-                    <input type="checkbox" data-ingredient="Catsup" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
-                    <span class="text-sm font-medium dark:text-gray-200">🔴 Catsup</span>
-                </label>
+                <!-- Generado por JS -->
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2">
@@ -495,17 +492,17 @@
     <!-- JAVASCRIPT DE LA APLICACIÓN -->
     <script>
         const DEFAULT_MENU = [
-            { id: 'h1', name: 'Hamburguesa sencilla', price: 60, category: 'Hamburguesas', emoji: '🍔', desc: '' },
-            { id: 'h2', name: 'Hamburguesa hawaiana', price: 70, category: 'Hamburguesas', emoji: '🍍', desc: '' },
-            { id: 'h3', name: 'Hamburguesa con tocino', price: 70, category: 'Hamburguesas', emoji: '🥓', desc: '' },
-            { id: 'h4', name: 'Hamburguesa doble', price: 85, category: 'Hamburguesas', emoji: '🍔', desc: 'Doble carne' },
-            { id: 'a1', name: 'Alitas 6 pzas - BBQ', price: 70, category: 'Alitas', emoji: '🍗', desc: 'Salsa BBQ' },
-            { id: 'a2', name: 'Alitas 6 pzas - Búfalo', price: 70, category: 'Alitas', emoji: '🔥', desc: 'Salsa Búfalo' },
-            { id: 'a3', name: 'Alitas 6 pzas - 3 Salsas', price: 70, category: 'Alitas', emoji: '🌶️', desc: 'Salsa maggi, Valentina, inglesa, limón y Tajín' },
-            { id: 'a4', name: 'Alitas 6 pzas - Mango Habanero', price: 70, category: 'Alitas', emoji: '🥭', desc: 'Salsa Mango Habanero' },
-            { id: 'p1', name: 'Papas a la francesa', price: 50, category: 'Papas', emoji: '🍟', desc: '' },
-            { id: 'hd1', name: 'Hot dog', price: 25, category: 'Hot Dogs', emoji: '🌭', desc: '' },
-            { id: 'hd2', name: 'Hot dog con tocino', price: 35, category: 'Hot Dogs', emoji: '🥓', desc: '' }
+            { id: 'h1', name: 'Hamburguesa sencilla', price: 60, category: 'Hamburguesas', emoji: '🍔', desc: '', hasIngredients: true, ingredientsList: 'Cebolla, Jitomate, Lechuga, Chile, Mayonesa, Catsup' },
+            { id: 'h2', name: 'Hamburguesa hawaiana', price: 70, category: 'Hamburguesas', emoji: '🍍', desc: '', hasIngredients: true, ingredientsList: 'Cebolla, Jitomate, Lechuga, Chile, Mayonesa, Catsup' },
+            { id: 'h3', name: 'Hamburguesa con tocino', price: 70, category: 'Hamburguesas', emoji: '🥓', desc: '', hasIngredients: true, ingredientsList: 'Cebolla, Jitomate, Lechuga, Chile, Mayonesa, Catsup' },
+            { id: 'h4', name: 'Hamburguesa doble', price: 85, category: 'Hamburguesas', emoji: '🍔', desc: 'Doble carne', hasIngredients: true, ingredientsList: 'Cebolla, Jitomate, Lechuga, Chile, Mayonesa, Catsup' },
+            { id: 'a1', name: 'Alitas 6 pzas - BBQ', price: 70, category: 'Alitas', emoji: '🍗', desc: 'Salsa BBQ', hasIngredients: false, ingredientsList: '' },
+            { id: 'a2', name: 'Alitas 6 pzas - Búfalo', price: 70, category: 'Alitas', emoji: '🔥', desc: 'Salsa Búfalo', hasIngredients: false, ingredientsList: '' },
+            { id: 'a3', name: 'Alitas 6 pzas - 3 Salsas', price: 70, category: 'Alitas', emoji: '🌶️', desc: 'Salsa maggi, Valentina, inglesa, limón y Tajín', hasIngredients: false, ingredientsList: '' },
+            { id: 'a4', name: 'Alitas 6 pzas - Mango Habanero', price: 70, category: 'Alitas', emoji: '🥭', desc: 'Salsa Mango Habanero', hasIngredients: false, ingredientsList: '' },
+            { id: 'p1', name: 'Papas a la francesa', price: 50, category: 'Papas', emoji: '🍟', desc: '', hasIngredients: true, ingredientsList: 'Mayonesa, Catsup, Queso, Chile Valentina' },
+            { id: 'hd1', name: 'Hot dog', price: 25, category: 'Hot Dogs', emoji: '🌭', desc: '', hasIngredients: true, ingredientsList: 'Cebolla, Jitomate, Mayonesa, Catsup, Chile' },
+            { id: 'hd2', name: 'Hot dog con tocino', price: 35, category: 'Hot Dogs', emoji: '🥓', desc: '', hasIngredients: true, ingredientsList: 'Cebolla, Jitomate, Mayonesa, Catsup, Chile' }
         ];
 
         let menuItems = [];
@@ -534,7 +531,7 @@
 
         function loadFromStorage() {
             try {
-                const savedMenu = localStorage.getItem('pos_menu_items_v2');
+                const savedMenu = localStorage.getItem('pos_menu_items_v4');
                 const savedOrders = localStorage.getItem('pos_orders_history_v2');
                 const savedCutsData = localStorage.getItem('pos_saved_cuts_history_v1');
                 const savedCounter = localStorage.getItem('pos_order_counter_v2');
@@ -851,7 +848,7 @@
                             <p class="font-extrabold text-orange-500 text-base mt-1">$${Number(item.price).toFixed(2)}</p>
                         </div>
                         <div class="mt-2.5 pt-2 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'} flex items-center justify-between">
-                            <span class="text-[11px] font-bold text-gray-400">${(item.category === 'Hamburguesas' || item.category === 'Hot Dogs') ? '⚙️ Personalizar' : '➕ Agregar'}</span>
+                            <span class="text-[11px] font-bold text-gray-400">${item.hasIngredients ? '⚙️ Personalizar' : '➕ Agregar'}</span>
                             <span class="w-7 h-7 rounded-lg bg-orange-500 text-white font-extrabold flex items-center justify-center text-xs">+</span>
                         </div>
                     `;
@@ -887,7 +884,7 @@
                         <div class="flex items-center gap-4 shrink-0">
                             <span class="font-extrabold text-orange-500 text-base">$${Number(item.price).toFixed(2)}</span>
                             <button type="button" class="px-3 py-1.5 bg-orange-500 text-white font-bold text-xs rounded-xl shadow-xs">
-                                ${(item.category === 'Hamburguesas' || item.category === 'Hot Dogs') ? '⚙️ Ingredientes' : '➕ Agregar'}
+                                ${item.hasIngredients ? '⚙️ Ingredientes' : '➕ Agregar'}
                             </button>
                         </div>
                     `;
@@ -901,14 +898,48 @@
             const prod = menuItems.find(p => p.id === id);
             if (!prod) return;
 
-            if (prod.category === 'Hamburguesas' || prod.category === 'Hot Dogs') {
+            if (prod.hasIngredients) {
                 currentCustomizingProduct = prod;
                 document.getElementById('modal-prod-name').textContent = `Personalizar: ${prod.name}`;
-                const checkboxes = document.querySelectorAll('#ingredients-checkboxes-container input[type="checkbox"]');
-                checkboxes.forEach(cb => cb.checked = true);
+                
+                const container = document.getElementById('ingredients-checkboxes-container');
+                container.innerHTML = '';
+
+                // Obtener ingredientes específicos del producto o usar por defecto si están vacíos
+                let listStr = prod.ingredientsList || 'Cebolla, Jitomate, Lechuga, Chile, Mayonesa, Catsup';
+                let ingredients = listStr.split(',').map(i => i.trim()).filter(i => i.length > 0);
+
+                ingredients.forEach(ing => {
+                    const label = document.createElement('label');
+                    label.className = isDarkMode 
+                        ? 'flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-700 cursor-pointer hover:bg-gray-700/50' 
+                        : 'flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 cursor-pointer hover:bg-orange-50/50';
+                    
+                    label.innerHTML = `
+                        <input type="checkbox" data-ingredient="${ing}" checked class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
+                        <span class="text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}">${ing}</span>
+                    `;
+                    container.appendChild(label);
+                });
+
                 document.getElementById('ingredients-modal').classList.remove('hidden');
             } else {
                 addToCartDirect(prod.id, prod.name, prod.price, prod.emoji, '');
+            }
+        }
+
+        function toggleProductIngredientsSwitch() {
+            const input = document.getElementById('prod-has-ingredients');
+            const btn = document.getElementById('prod-has-ingredients-btn');
+            
+            if (input.value === 'true') {
+                input.value = 'false';
+                btn.className = 'px-4 py-2 rounded-xl text-xs font-extrabold transition-all bg-gray-500 text-white shadow-xs';
+                btn.textContent = 'DESACTIVADO (OFF)';
+            } else {
+                input.value = 'true';
+                btn.className = 'px-4 py-2 rounded-xl text-xs font-extrabold transition-all bg-emerald-600 text-white shadow-xs';
+                btn.textContent = 'ACTIVADO (ON)';
             }
         }
 
@@ -1474,7 +1505,7 @@
 
         function saveMenuToStorage() {
             try {
-                localStorage.setItem('pos_menu_items_v2', JSON.stringify(menuItems));
+                localStorage.setItem('pos_menu_items_v4', JSON.stringify(menuItems));
             } catch (e) {}
         }
 
@@ -1488,19 +1519,21 @@
             const customCat = document.getElementById('prod-category-custom').value.trim();
             const category = (selectCat === '__NEW__' ? customCat : selectCat) || 'General';
             const desc = document.getElementById('prod-desc').value.trim();
+            const hasIngredients = document.getElementById('prod-has-ingredients').value === 'true';
+            const ingredientsList = document.getElementById('prod-ingredients-list').value.trim();
 
             if (!name || isNaN(price)) return;
 
             if (id) {
                 const idx = menuItems.findIndex(p => p.id === id);
                 if (idx !== -1) {
-                    menuItems[idx] = { id, name, price, category, emoji, desc };
+                    menuItems[idx] = { id, name, price, category, emoji, desc, hasIngredients, ingredientsList };
                     showToast('✏️', 'Producto actualizado');
                 }
             } else {
                 menuItems.push({
                     id: 'prod_' + Date.now(),
-                    name, price, category, emoji, desc
+                    name, price, category, emoji, desc, hasIngredients, ingredientsList
                 });
                 showToast('✅', 'Producto agregado al menú');
             }
@@ -1521,6 +1554,19 @@
             document.getElementById('prod-name').value = p.name;
             document.getElementById('prod-price').value = p.price;
             document.getElementById('prod-desc').value = p.desc || '';
+            document.getElementById('prod-ingredients-list').value = p.ingredientsList || '';
+
+            // Estado de ingredientes ON / OFF
+            const hasIng = p.hasIngredients !== false; 
+            document.getElementById('prod-has-ingredients').value = hasIng ? 'true' : 'false';
+            const btn = document.getElementById('prod-has-ingredients-btn');
+            if (hasIng) {
+                btn.className = 'px-4 py-2 rounded-xl text-xs font-extrabold transition-all bg-emerald-600 text-white shadow-xs';
+                btn.textContent = 'ACTIVADO (ON)';
+            } else {
+                btn.className = 'px-4 py-2 rounded-xl text-xs font-extrabold transition-all bg-gray-500 text-white shadow-xs';
+                btn.textContent = 'DESACTIVADO (OFF)';
+            }
 
             const select = document.getElementById('prod-category-select');
             const customInput = document.getElementById('prod-category-custom');
@@ -1542,6 +1588,22 @@
             document.getElementById('save-prod-btn').textContent = 'Guardar Cambios';
             document.getElementById('cancel-edit-btn').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetProductForm() {
+            document.getElementById('product-form').reset();
+            document.getElementById('prod-id').value = '';
+            document.getElementById('prod-emoji').value = '🍔';
+            document.getElementById('prod-ingredients-list').value = 'Cebolla, Jitomate, Lechuga, Chile, Mayonesa, Catsup';
+            document.getElementById('prod-category-custom').classList.add('hidden');
+            document.getElementById('form-title').textContent = '➕ Agregar Nuevo Producto al Menú';
+            document.getElementById('save-prod-btn').textContent = 'Guardar Producto en el Menú';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+
+            document.getElementById('prod-has-ingredients').value = 'true';
+            const btn = document.getElementById('prod-has-ingredients-btn');
+            btn.className = 'px-4 py-2 rounded-xl text-xs font-extrabold transition-all bg-emerald-600 text-white shadow-xs';
+            btn.textContent = 'ACTIVADO (ON)';
         }
 
         function deleteProduct(id) {
@@ -1592,13 +1654,20 @@
             list.innerHTML = '';
 
             menuItems.forEach(item => {
+                const ingBadge = item.hasIngredients !== false 
+                    ? `<span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full dark:bg-emerald-950 dark:text-emerald-300">Ingredientes ON</span>`
+                    : `<span class="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300">Ingredientes OFF</span>`;
+
                 const row = document.createElement('div');
                 row.className = 'py-3 flex items-center justify-between gap-3';
                 row.innerHTML = `
                     <div class="flex items-center gap-3 min-w-0">
                         <span class="text-2xl w-10 h-10 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'} rounded-xl flex items-center justify-center shrink-0">${item.emoji || '🍽️'}</span>
                         <div class="min-w-0">
-                            <p class="font-bold text-sm truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}">${item.name}</p>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="font-bold text-sm truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}">${item.name}</p>
+                                ${ingBadge}
+                            </div>
                             <p class="text-xs text-gray-500">${item.category} • <strong class="text-orange-500">$${Number(item.price).toFixed(2)}</strong></p>
                         </div>
                     </div>
